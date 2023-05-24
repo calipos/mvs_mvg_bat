@@ -11,8 +11,8 @@ def save_image(image, addr, num):
  
 if __name__ == '__main__':
  
-    video_path = "E:/viewer/5.mp4" #视频路径
-    out_path = "E:/viewer/im_" #保存图片路径+名字
+    video_path = "D:/repo/mvs_mvg_bat/viewer/5.mp4" #视频路径
+    out_path = "D:/repo/mvs_mvg_bat/viewer/im_" #保存图片路径+名字
  
 
  

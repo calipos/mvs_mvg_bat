@@ -25,6 +25,12 @@ WorldBuild/x64/*
 WorldBuild/.vs/*
 WorldBuild/*jpgx64/*
 DlibLandmark/x64/*
+replaceOpenMvgFeature/build-vs2019/*
+*.exe
+*.task
+*.dat
+viewer/*
+viewerout/*
 out/*
 .vs/*
 Debug/*

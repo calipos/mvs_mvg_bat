@@ -4,38 +4,7 @@
 
 //D:\repo\openMVG\src\build-2019\Windows-AMD64-Release\Debug\openMVG_features.lib;D:\repo\openMVG\src\build-2019\Windows-AMD64-Release\Debug\openMVG_matching_image_collection.lib;D:\repo\openMVG\src\build-2019\Windows-AMD64-Release\Debug\openMVG_multiview.lib;D:\repo\openMVG\src\build-2019\Windows-AMD64-Release\Debug\openMVG_sfm.lib;D:\repo\openMVG\src\build-2019\Windows-AMD64-Release\Debug\openMVG_system.lib;D:\repo\openMVG\src\build-2019\Windows-AMD64-Release\Debug\openMVG_stlplus.lib;D:\repo\openMVG\src\build-2019\Windows-AMD64-Release\Debug\openMVG_matching.lib;D:\repo\openMVG\src\build-2019\Windows-AMD64-Release\Debug\openMVG_fast.lib;D:\repo\openMVG\src\build-2019\Windows-AMD64-Release\Debug\openMVG_geometry.lib;D:\repo\openMVG\src\build-2019\Windows-AMD64-Release\Debug\openMVG_image.lib;D:\repo\openMVG\src\build-2019\Windows-AMD64-Release\Debug\vlsift.lib;D:\repo\openMVG\src\build-2019\Windows-AMD64-Release\Debug\openMVG_jpeg.lib;D:\repo\openMVG\src\build-2019\Windows-AMD64-Release\Debug\openMVG_png.lib;D:\repo\openMVG\src\build-2019\Windows-AMD64-Release\Debug\openMVG_tiff.lib;D:\repo\openMVG\src\build-2019\Windows-AMD64-Release\Debug\openMVG_zlib.lib;D:\repo\openMVG\src\build-2019\Windows-AMD64-Release\Debug\openMVG_lInftyComputerVision.lib;D:\repo\openMVG\src\build-2019\third_party\ceres-solver\lib\Debug\openMVG_ceres-debug.lib;D:\repo\openMVG\src\build-2019\Windows-AMD64-Release\Debug\openMVG_linearProgramming.lib;D:\repo\openMVG\src\build-2019\Windows-AMD64-Release\Debug\openMVG_numeric.lib;D:\repo\openMVG\src\build-2019\Windows-AMD64-Release\Debug\lib_clp.lib;D:\repo\openMVG\src\build-2019\Windows-AMD64-Release\Debug\lib_OsiClpSolver.lib;D:\repo\openMVG\src\build-2019\Windows-AMD64-Release\Debug\lib_CoinUtils.lib;D:\repo\openMVG\src\build-2019\Windows-AMD64-Release\Debug\lib_Osi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib
 
-//D:\repo\openMVG\src\build-2019\Windows-AMD64-Release\Debug\openMVG_features.lib
-//; D:\repo\openMVG\src\build - 2019\Windows - AMD64 - Release\Debug\openMVG_matching_image_collection.lib
-//; D:\repo\openMVG\src\build - 2019\Windows - AMD64 - Release\Debug\openMVG_multiview.lib
-//; D:\repo\openMVG\src\build - 2019\Windows - AMD64 - Release\Debug\openMVG_sfm.lib
-//; D:\repo\openMVG\src\build - 2019\Windows - AMD64 - Release\Debug\openMVG_system.lib
-//; D:\repo\openMVG\src\build - 2019\Windows - AMD64 - Release\Debug\openMVG_stlplus.lib
-//; D:\repo\openMVG\src\build - 2019\Windows - AMD64 - Release\Debug\openMVG_matching.lib
-//; D:\repo\openMVG\src\build - 2019\Windows - AMD64 - Release\Debug\openMVG_fast.lib
-//; D:\repo\openMVG\src\build - 2019\Windows - AMD64 - Release\Debug\openMVG_geometry.lib
-//; D:\repo\openMVG\src\build - 2019\Windows - AMD64 - Release\Debug\openMVG_image.lib
-//; D:\repo\openMVG\src\build - 2019\Windows - AMD64 - Release\Debug\vlsift.lib; D:\repo\openMVG\src\build - 2019\Windows - AMD64 - Release\Debug\openMVG_jpeg.lib
-//; D:\repo\openMVG\src\build - 2019\Windows - AMD64 - Release\Debug\openMVG_png.lib
-//; D:\repo\openMVG\src\build - 2019\Windows - AMD64 - Release\Debug\openMVG_tiff.lib
-//; D:\repo\openMVG\src\build - 2019\Windows - AMD64 - Release\Debug\openMVG_zlib.lib
-//; D:\repo\openMVG\src\build - 2019\Windows - AMD64 - Release\Debug\openMVG_lInftyComputerVision.lib
-//; D:\repo\openMVG\src\build - 2019\third_party\ceres - solver\lib\Debug\openMVG_ceres - debug.lib
-//; D:\repo\openMVG\src\build - 2019\Windows - AMD64 - Release\Debug\openMVG_linearProgramming.lib
-//; D:\repo\openMVG\src\build - 2019\Windows - AMD64 - Release\Debug\openMVG_numeric.lib
-//; D:\repo\openMVG\src\build - 2019\Windows - AMD64 - Release\Debug\lib_clp.lib
-//; D:\repo\openMVG\src\build - 2019\Windows - AMD64 - Release\Debug\lib_OsiClpSolver.lib
-//; D:\repo\openMVG\src\build - 2019\Windows - AMD64 - Release\Debug\lib_CoinUtils.lib
-//; D:\repo\openMVG\src\build - 2019\Windows - AMD64 - Release\Debug\lib_Osi.lib
-//; kernel32.lib
-//; user32.lib
-//; gdi32.lib
-//; winspool.lib
-//; shell32.lib
-//; ole32.lib
-//; oleaut32.lib
-//; uuid.lib
-//; comdlg32.lib
-//; advapi32.lib
+ 
 
 //NOMINMAX;WIN32;_WINDOWS;_USE_MATH_DEFINES;OPENMVG_USE_AVX2;OPENMVG_USE_AVX;__SSE2__;__SSE3__;__SSSE3__;__SSE4_1__;__SSE4_2__;__AVX__;__FMA__;__BMI2__;__AVX2__;OPENMVG_USE_OPENMP;EIGEN_MPL2_ONLY;USE_PATENTED_LIGT;LEMON_ONLY_TEMPLATES
 
@@ -70,8 +39,8 @@
 #include "openMVG/sfm/pipelines/sequential/sequential_SfM2.hpp"
 #include "openMVG/sfm/pipelines/sequential/SfmSceneInitializerMaxPair.hpp"
 #include "openMVG/sfm/pipelines/sequential/SfmSceneInitializerStellar.hpp"
-#include "openMVG/sfm/pipelines/stellar/sfm_stellar_engine.hpp"
-#include "GlobalSfMReconstructionEngine_RelativeMotions_insert.h"
+//#include "openMVG/sfm/pipelines/stellar/sfm_stellar_engine.hpp"
+//#include "GlobalSfMReconstructionEngine_RelativeMotions_insert.h"
 
 #include "openMVG/matching/indMatch.hpp"
 #include "openMVG/matching/indMatch_utils.hpp"
@@ -417,8 +386,7 @@ int replaceFeature()
 		{
 			if (landmarkCnt != data.landmarks.size())
 			{
-				std::cout << < std::endl;
-				std::cout <<"" < std::endl;
+				std::cout <<"" << std::endl;
 			}
 		}
 	}
@@ -784,39 +752,34 @@ int main()
 	break;
 	case ESfMEngine::GLOBAL_INSERT:
 	{
-		openMVG::sfm::GlobalSfMReconstructionEngine_RelativeMotions_Insert* engine =
-			new openMVG::sfm::GlobalSfMReconstructionEngine_RelativeMotions_Insert(
-				sfm_data,
-				specifiedMatch,
-				sfmOut,
-				stlplus::create_filespec(sfmOut, "Reconstruction_Report.html"));
-
+		//openMVG::sfm::GlobalSfMReconstructionEngine_RelativeMotions_Insert* engine =
+		//	new openMVG::sfm::GlobalSfMReconstructionEngine_RelativeMotions_Insert(
+		//		sfm_data,
+		//		specifiedMatch,
+		//		sfmOut,
+		//		stlplus::create_filespec(sfmOut, "Reconstruction_Report.html"));
 		// Configuration:
-		engine->SetFeaturesProvider(feats_provider.get());
-		engine->SetMatchesProvider(matches_provider.get());
-
-		// Configure motion averaging method
-		engine->SetRotationAveragingMethod(openMVG::sfm::ERotationAveragingMethod(openMVG::sfm::ERotationAveragingMethod::ROTATION_AVERAGING_L2));
-		engine->SetTranslationAveragingMethod(openMVG::sfm::ETranslationAveragingMethod(openMVG::sfm::ETranslationAveragingMethod::TRANSLATION_AVERAGING_SOFTL1));
-
-		sfm_engine.reset(engine);
+		//engine->SetFeaturesProvider(feats_provider.get());
+		//engine->SetMatchesProvider(matches_provider.get());
+		//// Configure motion averaging method
+		//engine->SetRotationAveragingMethod(openMVG::sfm::ERotationAveragingMethod(openMVG::sfm::ERotationAveragingMethod::ROTATION_AVERAGING_L2));
+		//engine->SetTranslationAveragingMethod(openMVG::sfm::ETranslationAveragingMethod(openMVG::sfm::ETranslationAveragingMethod::TRANSLATION_AVERAGING_SOFTL1));
+		//sfm_engine.reset(engine);
 	}
 	break;
 	case ESfMEngine::STELLAR:
 	{
-		openMVG::sfm::StellarSfMReconstructionEngine* engine =
-			new openMVG::sfm::StellarSfMReconstructionEngine(
-				sfm_data,
-				sfmOut,
-				stlplus::create_filespec(sfmOut, "Reconstruction_Report.html"));
-
-		// Configure the features_provider & the matches_provider
-		engine->SetFeaturesProvider(feats_provider.get());
-		engine->SetMatchesProvider(matches_provider.get());
-
-		// Configure reconstruction parameters
-		engine->SetGraphSimplification(openMVG::sfm::EGraphSimplification::MST_X, graph_simplification_value);
-		sfm_engine.reset(engine);
+		//openMVG::sfm::StellarSfMReconstructionEngine* engine =
+		//	new openMVG::sfm::StellarSfMReconstructionEngine(
+		//		sfm_data,
+		//		sfmOut,
+		//		stlplus::create_filespec(sfmOut, "Reconstruction_Report.html"));
+		//// Configure the features_provider & the matches_provider
+		//engine->SetFeaturesProvider(feats_provider.get());
+		//engine->SetMatchesProvider(matches_provider.get());
+		//// Configure reconstruction parameters
+		//engine->SetGraphSimplification(openMVG::sfm::EGraphSimplification::MST_X, graph_simplification_value);
+		//sfm_engine.reset(engine);
 	}
 	break;
 	default:

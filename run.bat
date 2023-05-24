@@ -1,9 +1,10 @@
 ::@echo off
-set piciturePath=E:\viewer
-set workSpace=E:\viewerout
-set workSfmSpace=E:\viewerout\sfm
-set workMvsSpace=E:\viewerout\mvs
-set workLmsSpace=E:\viewerout\landmarks
+set piciturePath=D:\repo\mvs_mvg_bat\viewer
+set workSpace=D:\repo\mvs_mvg_bat\viewerout
+set workSfmSpace=D:\repo\mvs_mvg_bat\viewerout\sfm
+set workMvsSpace=D:\repo\mvs_mvg_bat\viewerout\mvs
+set workLmsSpace=D:\repo\mvs_mvg_bat\viewerout\landmarks
+set exePath=D:\repo\mvg_mvs_exe
 echo %piciturePath%
 echo %workSpace%
 echo %workSfmSpace%
@@ -16,14 +17,17 @@ mkdir %workSfmSpace%
 mkdir %workLmsSpace% 
 
 echo "0. Intrinsics analysis"
-D:\repo\OpenMVG.release\openMVG_main_SfMInit_ImageListing -i %piciturePath% -o %workSfmSpace%\matches -d D:\repo\OpenMVG.release\sensor_width_camera_database.txt -f 2000
+%exePath%\openMVG_main_SfMInit_ImageListing -i %piciturePath% -o %workSfmSpace%\matches -d %exePath%\sensor_width_camera_database.txt -f 2000
 
 python.exe .\collectImgPathForLandmarks.py %workSfmSpace%\matches\sfm_data.json  imagePathSet.txt %workLmsSpace%
-.\WorldBuild\x64\Release\DlibLandmark.exe  imagePathSet.txt
 
+::.\DlibLandmark\x64\Release\DlibLandmark.exe  imagePathSet.txt
+python  mediapip.py imagePathSet.txt
+
+exit
 
 echo "1. Compute features"
-D:\repo\OpenMVG.release\openMVG_main_ComputeFeatures -i %workSfmSpace%\matches\sfm_data.json -o %workSfmSpace%\matches -m SIFT   -p NORMAL
+%exePath%\openMVG_main_ComputeFeatures -i %workSfmSpace%\matches\sfm_data.json -o %workSfmSpace%\matches -m SIFT   -p NORMAL
 
 exit
 
