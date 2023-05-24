@@ -1,0 +1,84 @@
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.old
+*.pdf
+*.shanghai
+*.o
+*.so
+*.obj
+*.feature
+*.zip
+*.bmp
+*.mtl
+*.jpg
+*.mp4
+*/*/CMakeFiles/*
+.kateproject
+*/*/*.kateproject
+*/*/*.cmake
+.ninja_deps 
+WorldBuild/x64/*
+WorldBuild/.vs/*
+WorldBuild/*jpgx64/*
+DlibLandmark/x64/*
+out/*
+.vs/*
+Debug/*
+*.pcd
+*.ply
+*.txt
+!CMakeLists.txt
+*.json
+*.off
+*.bmp
+*.png
+*.xyz
+*.pts
+*.def
+*.exp
+*.exports
+*.textgrid
+*.yml
+*.xml
+*.
+*.VC.db
+*.opendb
+*.log
+*.tlog
+*.lastbuildstate
+*.idb
+*.pdb
+*.ilk
+*.ipdb
+*.iobj
+*.rar
+*.suo
+
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
