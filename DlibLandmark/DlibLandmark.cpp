@@ -1,3 +1,8 @@
+//debug D:\ucl360\libraries2019\dlib1924\include;D:\ucl360\libraries2019;D:\BaiduNetdiskDownload\opencv-4.7.0\static_build\install\include;D:\ucl360\libraries2019\glog_debug\include
+//release D:\ucl360\libraries2019\dlib1924\include;D:\ucl360\libraries2019;D:\BaiduNetdiskDownload\opencv-4.7.0\static_build\install\include;D:\ucl360\libraries2019\glog_release\include
+//GLOG_NO_ABBREVIATED_SEVERITIES GOOGLE_GLOG_DLL_DECL =
+//release D:\ucl360\libraries2019\dlib1924\lib;D:\BaiduNetdiskDownload\opencv-4.7.0\static_build\install\x64\vc16\staticlib;D:\ucl360\libraries2019\glog_release\lib
+//debug D:\ucl360\libraries2019\dlib1924\lib;D:\BaiduNetdiskDownload\opencv-4.7.0\static_build\install\x64\vc16\staticlib;D:\ucl360\libraries2019\glog_debug\lib
 #include "glog/logging.h"
 #include "cereal/cereal.hpp"
 #include "cereal/archives/binary.hpp"
@@ -166,6 +171,7 @@ std::pair<std::vector<std::string>, std::vector<std::string>>readFromParam(const
 }
 int main(int argc, char** argv)
 {
+	return 2;
 	if (argc<2)
 	{
 		std::cout<<"cmd picPath or cmd picPathSetTxt" << std::endl;

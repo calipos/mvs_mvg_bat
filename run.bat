@@ -4,7 +4,7 @@ set workSpace=D:\repo\mvs_mvg_bat\viewerout
 set workSfmSpace=D:\repo\mvs_mvg_bat\viewerout\sfm
 set workMvsSpace=D:\repo\mvs_mvg_bat\viewerout\mvs
 set workLmsSpace=D:\repo\mvs_mvg_bat\viewerout\landmarks
-set exePath=D:\repo\mvg_mvs_exe
+set exePath=D:\repo\openMVG\src\build-2019\install\bin
 echo %piciturePath%
 echo %workSpace%
 echo %workSfmSpace%
@@ -17,14 +17,13 @@ mkdir %workSfmSpace%
 mkdir %workLmsSpace% 
 
 echo "0. Intrinsics analysis"
-%exePath%\openMVG_main_SfMInit_ImageListing -i %piciturePath% -o %workSfmSpace%\matches -d %exePath%\sensor_width_camera_database.txt -f 2000
+%exePath%\openMVG_main_SfMInit_ImageListing -i %piciturePath% -o %workSfmSpace%\matches -d  sensor_width_camera_database.txt -f 2000
 
 python.exe .\collectImgPathForLandmarks.py %workSfmSpace%\matches\sfm_data.json  imagePathSet.txt %workLmsSpace%
 
 ::.\DlibLandmark\x64\Release\DlibLandmark.exe  imagePathSet.txt
 python  mediapip.py imagePathSet.txt
 
-exit
 
 echo "1. Compute features"
 %exePath%\openMVG_main_ComputeFeatures -i %workSfmSpace%\matches\sfm_data.json -o %workSfmSpace%\matches -m SIFT   -p NORMAL

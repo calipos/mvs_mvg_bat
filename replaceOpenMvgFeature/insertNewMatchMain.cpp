@@ -335,8 +335,8 @@ int replaceFeature()
 { 
 	
 
-	std::string jsonRoot = "E:/viewerout/landmarks/";
-	std::string sfmJsonPath = "E:/viewerout/sfm/matches/sfm_data.json";
+	std::string jsonRoot = "D:/repo/mvs_mvg_bat/viewerout/landmarks/";
+	std::string sfmJsonPath = "D:/repo/mvs_mvg_bat/viewerout/sfm/matches/sfm_data.json";
 	const std::string featureRoot = stlplus::folder_part(sfmJsonPath);
 	const std::string sImage_describer = stlplus::create_filespec(featureRoot, "image_describer", "json");
 	std::unique_ptr<openMVG::features::Regions> regions_type = openMVG::features::Init_region_type_from_file(sImage_describer);
