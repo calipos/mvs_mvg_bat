@@ -331,9 +331,21 @@ struct Landmarks
 		ar(cereal::make_nvp("landMarks", landmarks));
 	}
 }; 
+
+
+openMVG::features::SIFT_Regions::DescriptorT getRandDescripBaesOnIdx(const int& descriptorLength, const int&  i)
+{	 
+	srand(i);
+	openMVG::features::SIFT_Regions::DescriptorT randDescrip;
+	for (int i = 0; i < descriptorLength; i++) randDescrip[i] = rand() % 256;
+	return randDescrip;
+}
 int replaceFeature()
 { 
-	
+	std::unique_ptr<openMVG::features::SIFT_Regions> regions_ptr(new openMVG::features::SIFT_Regions());
+	int descriptorLength = regions_ptr->DescriptorLength();
+	std::unique_ptr<openMVG::features::SIFT_Image_describer> image_describer(new openMVG::features::SIFT_Image_describer(openMVG::features::SIFT_Image_describer::Params(), !false));
+
 
 	std::string jsonRoot = "D:/repo/mvs_mvg_bat/viewerout/landmarks/";
 	std::string sfmJsonPath = "D:/repo/mvs_mvg_bat/viewerout/sfm/matches/sfm_data.json";
@@ -378,7 +390,7 @@ int replaceFeature()
 			iter = sfm_data.views.erase(iter);
 			continue;
 		}
-		if (landmarkCnt<-1)
+		if (landmarkCnt<0)
 		{
 			landmarkCnt = data.landmarks.size();
 		}
@@ -386,9 +398,27 @@ int replaceFeature()
 		{
 			if (landmarkCnt != data.landmarks.size())
 			{
-				std::cout <<"" << std::endl;
+				std::cout <<"  !!!  " << std::endl;
 			}
+		} 
+		std::string extension = stlplus::extension_part(imgName);
+		std::string stem = imgName.substr(0, imgName.length() - extension.length() - 1);
+		std::string thisFeaturePath = stem + ".feat";
+		std::string thisDescripPath = stem + ".desc";
+		image_describer->Load(regions_ptr.get(), thisFeaturePath, thisDescripPath);
+		regions_ptr.get()->Features().clear();
+		regions_ptr.get()->Descriptors().clear();
+		for (int i = 0; i < data.landmarks.size(); i++)
+		{
+			openMVG::features::SIFT_Regions::FeatureT thisFeat;
+			thisFeat.x() = data.landmarks[i][0];
+			thisFeat.y() = data.landmarks[i][1]; 
+			regions_ptr.get()->Features().emplace_back(thisFeat);
+			regions_ptr.get()->Descriptors().emplace_back(getRandDescripBaesOnIdx(descriptorLength,i)); 
 		}
+
+		image_describer->Save(regions_ptr.get(), thisFeaturePath, thisDescripPath);
+		iter++;
 	}
 	return 0;
 }

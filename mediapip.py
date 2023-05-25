@@ -13,7 +13,7 @@ def landmark2d(img,detection_result):
     face_landmarks_list = detection_result.face_landmarks
     if len(face_landmarks_list)!=1:
         print("len(face_landmarks_list)!=1")
-        exit(0)
+        return None
     face_landmarks = face_landmarks_list[0]
     landmark3dList=[]
     for landmark in face_landmarks:
@@ -144,6 +144,7 @@ if __name__ == '__main__':
         print(imgsPath[idx])
         detection_result = detector.detect(image)
         lms = landmark2d(image.numpy_view(),detection_result) 
-        data = {'landMarks':lms} 
-        with open(jsonsPath[idx], 'w') as f:
-            json.dump(data, f)
+        if not lms is None:
+            data = {'landMarks':lms} 
+            with open(jsonsPath[idx], 'w') as f:
+                json.dump(data, f)

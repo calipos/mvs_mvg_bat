@@ -1,10 +1,10 @@
-::@echo off
+echo off
 set piciturePath=D:\repo\mvs_mvg_bat\viewer
 set workSpace=D:\repo\mvs_mvg_bat\viewerout
 set workSfmSpace=D:\repo\mvs_mvg_bat\viewerout\sfm
 set workMvsSpace=D:\repo\mvs_mvg_bat\viewerout\mvs
 set workLmsSpace=D:\repo\mvs_mvg_bat\viewerout\landmarks
-set exePath=D:\repo\openMVG\src\build-2019\install\bin
+set exePath=D:\repo\openMVG\src\build-2019\installRelease\bin
 echo %piciturePath%
 echo %workSpace%
 echo %workSfmSpace%
@@ -21,26 +21,27 @@ echo "0. Intrinsics analysis"
 
 python.exe .\collectImgPathForLandmarks.py %workSfmSpace%\matches\sfm_data.json  imagePathSet.txt %workLmsSpace%
 
-::.\DlibLandmark\x64\Release\DlibLandmark.exe  imagePathSet.txt
-python  mediapip.py imagePathSet.txt
+.\DlibLandmark\x64\Release\DlibLandmark.exe  imagePathSet.txt
+::python  mediapip.py imagePathSet.txt
 
 
 echo "1. Compute features"
 %exePath%\openMVG_main_ComputeFeatures -i %workSfmSpace%\matches\sfm_data.json -o %workSfmSpace%\matches -m SIFT   -p NORMAL
 
-exit
+bin\ReplaceOpenMvgFeature.exe
 
 echo "2. Compute pairs"
-D:\repo\OpenMVG.release\openMVG_main_PairGenerator -i %workSfmSpace%\matches\sfm_data.json -o %workSfmSpace%\matches\pairs.txt
+%exePath%\openMVG_main_PairGenerator -i %workSfmSpace%\matches\sfm_data.json -o %workSfmSpace%\matches\pairs.txt
 ::python.exe .\gener_new_pair.py  %workSfmSpace%\matches\sfm_data.json  %workSfmSpace%\matches\pairs.txt
 
 
 echo "3. Compute matches"
-D:\repo\OpenMVG.release\openMVG_main_ComputeMatches -i %workSfmSpace%\matches\sfm_data.json -p %workSfmSpace%\matches\pairs.txt -o %workSfmSpace%\matches\matches.putative.bin -n ANNL2
-::exit
+%exePath%\openMVG_main_ComputeMatches -i %workSfmSpace%\matches\sfm_data.json -p %workSfmSpace%\matches\pairs.txt -o %workSfmSpace%\matches\matches.putative.bin -n ANNL2
+
+
 
 echo "4. Filter matches"
-D:\repo\OpenMVG.release\openMVG_main_GeometricFilter -i %workSfmSpace%\matches\sfm_data.json -m %workSfmSpace%\matches\matches.putative.bin -o %workSfmSpace%\matches\matches.f.bin  -g f
+%exePath%\openMVG_main_GeometricFilter -i %workSfmSpace%\matches\sfm_data.json -m %workSfmSpace%\matches\matches.putative.bin -o %workSfmSpace%\matches\matches.f.bin  -g f
 ::D:\repo\OpenMVG.release\openMVG_main_GeometricFilter -i %workSfmSpace%\matches\sfm_data.json -m %workSfmSpace%\matches\matches.putative.bin -o %workSfmSpace%\matches\matches.fe.bin  -g e
 
 
@@ -51,7 +52,7 @@ D:\repo\OpenMVG.release\openMVG_main_GeometricFilter -i %workSfmSpace%\matches\s
 
 
 echo "6. Incremental reconstruction(global)"
-D:\repo\openMVG\src\build-2019\Windows-AMD64-Release\Release\openMVG_main_SfM -i %workSfmSpace%\matches\sfm_data.json -m %workSfmSpace%\matches -o %workSfmSpace% -s GLOBAL        -M  %workSfmSpace%\matches\matches.f.bin
+%exePath%\openMVG_main_SfM -i %workSfmSpace%\matches\sfm_data.json -m %workSfmSpace%\matches -o %workSfmSpace% -s GLOBAL        -M  %workSfmSpace%\matches\matches.f.bin
 
 run2.bat
 ::pause
