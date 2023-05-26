@@ -1,10 +1,10 @@
 cmake_minimum_required (VERSION 2.8)
 
 # 项目信息
-project (ReplaceOpenMvgFeature)
-set(thirdPart D:/ucl360/libraries2019)  
+project (ReplaceOpenMvgFeature) 
 set(openMvgInstall D:/repo/openMVG/src/build-2019/install)
-set (CMAKE_BUILD_TYPE "Debug") #Release  Debug
+
+
 add_executable(ReplaceOpenMvgFeature insertNewMatchMain.cpp)
 
 add_definitions(-DNOMINMAX  -D_USE_MATH_DEFINES  -DOPENMVG_USE_AVX2 -DOPENMVG_USE_AVX -DOPENMVG_USE_OPENMP -DEIGEN_MPL2_ONLY -DUSE_PATENTED_LIGT -DLEMON_ONLY_TEMPLATES)
@@ -58,7 +58,6 @@ else()
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wall -O0")
     message("set Default CMAKE_BUILD_TYPE : ${CMAKE_BUILD_TYPE}")
 endif()
-SET(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_LIST_DIR}/..)
 install(TARGETS ReplaceOpenMvgFeature 
         RUNTIME DESTINATION bin  # 可执行文件安装路径 
         )

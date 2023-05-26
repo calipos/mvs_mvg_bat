@@ -20,7 +20,8 @@
 .kateproject
 */*/*.kateproject
 */*/*.cmake
-.ninja_deps 
+.ninja_deps
+build
 WorldBuild/x64/*
 WorldBuild/.vs/*
 WorldBuild/*jpgx64/*
