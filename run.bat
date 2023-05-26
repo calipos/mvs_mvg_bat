@@ -4,7 +4,7 @@ set workSpace=D:\repo\mvs_mvg_bat\viewerout
 set workSfmSpace=D:\repo\mvs_mvg_bat\viewerout\sfm
 set workMvsSpace=D:\repo\mvs_mvg_bat\viewerout\mvs
 set workLmsSpace=D:\repo\mvs_mvg_bat\viewerout\landmarks
-set exePath=D:\repo\openMVG\src\build-2019\installRelease\bin
+set openMvgPath=D:\repo\openMVG\src\build-2019\installRelease\bin
 echo %piciturePath%
 echo %workSpace%
 echo %workSfmSpace%
@@ -15,33 +15,41 @@ rd /s /q  %workSpace%
 mkdir %workSpace%
 mkdir %workSfmSpace% 
 mkdir %workLmsSpace% 
+mkdir %workMvsSpace% 
+
+echo "-1. prepare images"
+python.exe .\mp42jpg.py  D:\repo\mvs_mvg_bat\viewer\6.mp4  4
 
 echo "0. Intrinsics analysis"
-%exePath%\openMVG_main_SfMInit_ImageListing -i %piciturePath% -o %workSfmSpace%\matches -d  sensor_width_camera_database.txt -f 2000
+%openMvgPath%\openMVG_main_SfMInit_ImageListing -i %piciturePath% -o %workSfmSpace%\matches -d  sensor_width_camera_database.txt -f 2000
 
 python.exe .\collectImgPathForLandmarks.py %workSfmSpace%\matches\sfm_data.json  imagePathSet.txt %workLmsSpace%
 
-.\DlibLandmark\x64\Release\DlibLandmark.exe  imagePathSet.txt
-::python  mediapip.py imagePathSet.txt
+::.\DlibLandmark\x64\Release\DlibLandmark.exe  imagePathSet.txt
+python  mediapip.py imagePathSet.txt
 
 
 echo "1. Compute features"
-%exePath%\openMVG_main_ComputeFeatures -i %workSfmSpace%\matches\sfm_data.json -o %workSfmSpace%\matches -m SIFT   -p NORMAL
+%openMvgPath%\openMVG_main_ComputeFeatures -i %workSfmSpace%\matches\sfm_data.json -o %workSfmSpace%\matches -m SIFT   -p NORMAL
 
-bin\ReplaceOpenMvgFeature.exe
+echo "1.5  replace facial features"
+bin\ReplaceOpenMvgFeature.exe  %workLmsSpace%  %workSfmSpace%\matches\sfm_data.json
+ 
+
+
 
 echo "2. Compute pairs"
-%exePath%\openMVG_main_PairGenerator -i %workSfmSpace%\matches\sfm_data.json -o %workSfmSpace%\matches\pairs.txt
+%openMvgPath%\openMVG_main_PairGenerator -i %workSfmSpace%\matches\sfm_data.json -o %workSfmSpace%\matches\pairs.txt
 ::python.exe .\gener_new_pair.py  %workSfmSpace%\matches\sfm_data.json  %workSfmSpace%\matches\pairs.txt
 
 
 echo "3. Compute matches"
-%exePath%\openMVG_main_ComputeMatches -i %workSfmSpace%\matches\sfm_data.json -p %workSfmSpace%\matches\pairs.txt -o %workSfmSpace%\matches\matches.putative.bin -n ANNL2
+%openMvgPath%\openMVG_main_ComputeMatches -i %workSfmSpace%\matches\sfm_data.json -p %workSfmSpace%\matches\pairs.txt -o %workSfmSpace%\matches\matches.putative.bin -n ANNL2
 
 
 
 echo "4. Filter matches"
-%exePath%\openMVG_main_GeometricFilter -i %workSfmSpace%\matches\sfm_data.json -m %workSfmSpace%\matches\matches.putative.bin -o %workSfmSpace%\matches\matches.f.bin  -g f
+%openMvgPath%\openMVG_main_GeometricFilter -i %workSfmSpace%\matches\sfm_data.json -m %workSfmSpace%\matches\matches.putative.bin -o %workSfmSpace%\matches\matches.e.bin  -g e
 ::D:\repo\OpenMVG.release\openMVG_main_GeometricFilter -i %workSfmSpace%\matches\sfm_data.json -m %workSfmSpace%\matches\matches.putative.bin -o %workSfmSpace%\matches\matches.fe.bin  -g e
 
 
@@ -51,8 +59,12 @@ echo "4. Filter matches"
 
 
 
-echo "6. Incremental reconstruction(global)"
-%exePath%\openMVG_main_SfM -i %workSfmSpace%\matches\sfm_data.json -m %workSfmSpace%\matches -o %workSfmSpace% -s GLOBAL        -M  %workSfmSpace%\matches\matches.f.bin
+echo "6. Incremental reconstruction(global)  (INCREMENTAL)"
+%openMvgPath%\openMVG_main_SfM -i %workSfmSpace%\matches\sfm_data.json -m %workSfmSpace%\matches -o %workSfmSpace% -s global        -M  %workSfmSpace%\matches\matches.e.bin
+
+echo "7. Export to openMVS"
+%openMvgPath%\openMVG_main_openMVG2openMVS -i %workSfmSpace%/sfm_data.bin -o %workMvsSpace%/scene.mvs -d %workMvsSpace%/images   
+
 
 run2.bat
 ::pause

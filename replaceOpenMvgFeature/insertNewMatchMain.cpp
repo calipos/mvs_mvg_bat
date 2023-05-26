@@ -340,15 +340,12 @@ openMVG::features::SIFT_Regions::DescriptorT getRandDescripBaesOnIdx(const int& 
 	for (int i = 0; i < descriptorLength; i++) randDescrip[i] = rand() % 256;
 	return randDescrip;
 }
-int replaceFeature()
+int replaceFeature(const std::string& landmarksRoot, const std::string& sfmJsonPath)
 { 
 	std::unique_ptr<openMVG::features::SIFT_Regions> regions_ptr(new openMVG::features::SIFT_Regions());
 	int descriptorLength = regions_ptr->DescriptorLength();
 	std::unique_ptr<openMVG::features::SIFT_Image_describer> image_describer(new openMVG::features::SIFT_Image_describer(openMVG::features::SIFT_Image_describer::Params(), !false));
 
-
-	std::string jsonRoot = "D:/repo/mvs_mvg_bat/viewerout/landmarks/";
-	std::string sfmJsonPath = "D:/repo/mvs_mvg_bat/viewerout/sfm/matches/sfm_data.json";
 	const std::string featureRoot = stlplus::folder_part(sfmJsonPath);
 	const std::string sImage_describer = stlplus::create_filespec(featureRoot, "image_describer", "json");
 	std::unique_ptr<openMVG::features::Regions> regions_type = openMVG::features::Init_region_type_from_file(sImage_describer);
@@ -367,7 +364,7 @@ int replaceFeature()
 	for (auto iter = sfm_data.views.begin(); iter!= sfm_data.views.end();)
 	{   
 		const std::string imgName= iter->second->s_Img_path;
-		std::string jsonPath = jsonRoot + imgName + ".json";
+		std::string jsonPath = stlplus::create_filespec(landmarksRoot, imgName, "json");   
 		Landmarks data;
 		try
 		{
@@ -403,8 +400,10 @@ int replaceFeature()
 		} 
 		std::string extension = stlplus::extension_part(imgName);
 		std::string stem = imgName.substr(0, imgName.length() - extension.length() - 1);
-		std::string thisFeaturePath = stem + ".feat";
-		std::string thisDescripPath = stem + ".desc";
+		std::string thisFeaturePath = stlplus::create_filespec(featureRoot, stem, "feat"); 
+		std::string thisDescripPath = stlplus::create_filespec(featureRoot, stem, "desc");
+		std::cout << "thisFeaturePath : " << thisFeaturePath << std::endl;
+		std::cout << "thisDescripPath : " << thisDescripPath << std::endl;
 		image_describer->Load(regions_ptr.get(), thisFeaturePath, thisDescripPath);
 		regions_ptr.get()->Features().clear();
 		regions_ptr.get()->Descriptors().clear();
@@ -423,10 +422,26 @@ int replaceFeature()
 	return 0;
 }
 
-int main()
+int main(int argc, char** argv)
 {
-	return replaceFeature();
-
+	if (argc!=3)
+	{
+		std::cout<<"cmd landmarksRoot sfmJsonPath" << std::endl;
+		return -1;
+	}
+	else
+	{
+		std::cout << " You called:" << std::endl;
+		std::cout <<"  ---"<<argv[0] << std::endl;
+		std::cout <<"  ---"<<argv[1] << std::endl;
+		std::cout <<"  ---"<<argv[2] << std::endl;
+	}
+	{
+		std::string landmarksRoot = argv[1];
+		std::string sfmJsonPath = argv[2];
+		replaceFeature(landmarksRoot, sfmJsonPath);
+	}
+	 return 0;
 	//构造自己的sfm_data.bin
 	if(0)
 	{

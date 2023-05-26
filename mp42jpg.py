@@ -1,23 +1,33 @@
 from cv2 import VideoCapture
 from cv2 import imwrite
+import os
+import sys
+def deletFile(folder,tail):
+    filelist=os.listdir(folder)
+    for file in filelist:
+        if file.endswith(tail):
+            del_file =os.path.join(folder, file)  
+            os.remove(del_file) 
+            print("已经删除：",del_file) 
  
-# 定义保存图片函数
-# image:要保存的图片名字
-# addr；图片地址与相片名字的前部分
-# num: 相片，名字的后缀。int 类型
 def save_image(image, addr, num):
     address = addr + str(num) + '.jpg'
     imwrite(address, image)
  
 if __name__ == '__main__':
- 
-    video_path = "D:/repo/mvs_mvg_bat/viewer/5.mp4" #视频路径
-    out_path = "D:/repo/mvs_mvg_bat/viewer/im_" #保存图片路径+名字
- 
+    video_path = sys.argv[1]  
+    time_interval=int(sys.argv[2] )
+    video_dir = os.path.dirname(os.path.abspath(video_path)) 
+    out_path = os.path.join(video_dir, 'img_')
+    print('video_path = ',video_path)
+    print('time_interval = ',time_interval)
+    print('video_dir = ',video_dir)
+    print('out_path = ',out_path)
+    deletFile(video_dir,'.jpg')
 
  
     ######
-    time_interval = 10 #时间间隔
+    #time_interval = 5 #时间间隔
  
     # 读取视频文件
     videoCapture = VideoCapture(video_path)
