@@ -118,10 +118,14 @@ def detectSigle():
     return landmark2d(image.numpy_view(),detection_result)
     #cv2.imshow('result', annotated_image)
     #cv2.waitKey( ) 
-if __name__ == '__main__': 
-    
-    imagePathSetPath=sys.argv[1]  
-    f= open(imagePathSetPath,'r') 
+def findAllFile(base):
+    for root, ds, fs in os.walk(base):
+        return (fs)
+if __name__ == '__main__':   
+    imgsRoot=sys.argv[1] 
+    jsonRoot=sys.argv[2]   
+    imgNames=findAllFile(imgsRoot)
+    print(imgNames)  
     imgsPath=[]
     jsonsPath=[]
     base_options = python.BaseOptions(model_asset_path='face_landmarker_v2_with_blendshapes.task')
@@ -130,21 +134,15 @@ if __name__ == '__main__':
                                            output_facial_transformation_matrixes=True,
                                            num_faces=1)
     detector = vision.FaceLandmarker.create_from_options(options)
-    i=0
-    for line in f:
-        if i%2==0:  imgsPath.append(line.strip())
-        else : jsonsPath.append(line.strip())
-        i+=1
-    print(jsonsPath)
-    if(len(imgsPath)!=len(jsonsPath)):
-        print('len()!=len()')
-        exit(0)
-    for idx in range(len(imgsPath)):
-        image = mp.Image.create_from_file(imgsPath[idx])
-        print(imgsPath[idx])
+    for imgName in imgNames:
+        imgPath = os.path.join(imgsRoot,imgName)
+        if not imgPath.endswith('.jpg'):continue
+        jsonPath = os.path.join(jsonRoot,imgName)+'.json'
+        print(imgPath)
+        image = mp.Image.create_from_file(imgPath)
         detection_result = detector.detect(image)
         lms = landmark2d(image.numpy_view(),detection_result) 
         if not lms is None:
             data = {'landMarks':lms} 
-            with open(jsonsPath[idx], 'w') as f:
+            with open(jsonPath, 'w') as f:
                 json.dump(data, f)

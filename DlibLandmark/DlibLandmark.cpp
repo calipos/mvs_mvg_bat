@@ -20,7 +20,8 @@
 #include <dlib/image_processing/render_face_detections.h>
 #include <dlib/image_processing.h>
 #include <dlib/gui_widgets.h>
-#include <dlib/image_io.h>
+#include <dlib/image_io.h> 
+#include <dlib/dir_nav.h>
 #include <iostream>
 #include <vector>
 #include <string>
@@ -171,22 +172,53 @@ std::pair<std::vector<std::string>, std::vector<std::string>>readFromParam(const
 }
 int main(int argc, char** argv)
 {
-	return 2;
+	std::vector<dlib::file> files;
+	std::string jsonRoot;
 	if (argc<2)
 	{
-		std::cout<<"cmd picPath or cmd picPathSetTxt" << std::endl;
+		std::cout<<"cmd picPath landmarksDir" << std::endl;
 		return -1;
 	}
-	std::vector<std::string>imgsPath;
-	std::vector<std::string>jsonsPath;
-	std::tie(imgsPath, jsonsPath) = readFromParam(argv[1]);
+	try
+	{
+ 
+		dlib::directory picPath(argv[1]);
+		dlib::directory jsonPath(argv[2]);
+		
+		std::cout << "directory: " << picPath.name() << std::endl;
+		std::cout << "full path: " << picPath.full_name() << std::endl;
+		std::cout << "is root:   " << ((picPath.is_root()) ? "yes" : "no") << std::endl;
+		jsonRoot = jsonPath.full_name();
+		std::vector<dlib::directory> dirs = picPath.get_dirs();
+		files = picPath.get_files();
+
+		// sort the files and directories
+		sort(files.begin(), files.end());
+		sort(dirs.begin(), dirs.end());
+	}
+	catch (dlib::file::file_not_found& e)
+	{
+		std::cout << "file not found or accessible: " << e.info << std::endl;
+	}
+	catch (dlib::directory::dir_not_found& e)
+	{
+		std::cout << "dir not found or accessible: " << e.info << std::endl;
+	}
+	catch (dlib::directory::listing_error& e)
+	{
+		std::cout << "listing error: " << e.info << std::endl;
+	}
     dlib::frontal_face_detector detector = dlib::get_frontal_face_detector();
     dlib::shape_predictor sp;
     dlib::deserialize(landmarkDataPath.c_str()) >> sp; 
-	for (int imgIdx = 0; imgIdx < imgsPath.size(); imgIdx++)
+	for (int imgIdx = 0; imgIdx < files.size(); imgIdx++)
     {
-		const std::string& imgPath = imgsPath[imgIdx];
-		const std::string& jsonPath = jsonsPath[imgIdx];
+		const std::string& imgPath = files[imgIdx];
+		std::string imgName = files[imgIdx].name();
+		if (imgName.length() <= 4)continue;
+		std::string tail = imgPath.substr(imgPath.length() - 4);
+		if (tail.compare(".jpg") != 0)continue; 
+		const std::string& jsonPath = jsonRoot + "/" + imgName + ".json";
         std::cout << "processing image " << imgPath << std::endl;
         dlib::array2d<dlib::rgb_pixel> img;
         dlib::load_image(img, imgPath); 

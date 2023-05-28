@@ -18,25 +18,26 @@ mkdir %workLmsSpace%
 mkdir %workMvsSpace% 
 
 echo "-1. prepare images"
-python.exe .\mp42jpg.py  D:\repo\mvs_mvg_bat\viewer\6.mp4  4
+python.exe .\mp42jpg.py  %piciturePath%\8.mp4  5
+
+::bin\DlibLandmark.exe  %piciturePath% %workLmsSpace%
+python  mediapip.py %piciturePath% %workLmsSpace%
+
+python deleteImgs.py %workLmsSpace% %piciturePath%
 
 echo "0. Intrinsics analysis"
 %openMvgPath%\openMVG_main_SfMInit_ImageListing -i %piciturePath% -o %workSfmSpace%\matches -d  sensor_width_camera_database.txt -f 2000
 
-python.exe .\collectImgPathForLandmarks.py %workSfmSpace%\matches\sfm_data.json  imagePathSet.txt %workLmsSpace%
-
-::.\DlibLandmark\x64\Release\DlibLandmark.exe  imagePathSet.txt
-python  mediapip.py imagePathSet.txt
-
-
+::python.exe .\collectImgPathForLandmarks.py %workSfmSpace%\matches\sfm_data.json  imagePathSet.txt %workLmsSpace%
+ 
 echo "1. Compute features"
 %openMvgPath%\openMVG_main_ComputeFeatures -i %workSfmSpace%\matches\sfm_data.json -o %workSfmSpace%\matches -m SIFT   -p NORMAL
 
 echo "1.5  replace facial features"
 bin\ReplaceOpenMvgFeature.exe  %workLmsSpace%  %workSfmSpace%\matches\sfm_data.json
  
-
-
+::xcopy /y   %workSfmSpace%\matches\sfm_data.json.json %workSfmSpace%\matches\sfm_data.json
+ 
 
 echo "2. Compute pairs"
 %openMvgPath%\openMVG_main_PairGenerator -i %workSfmSpace%\matches\sfm_data.json -o %workSfmSpace%\matches\pairs.txt
@@ -59,14 +60,14 @@ echo "4. Filter matches"
 
 
 
-echo "6. Incremental reconstruction(global)  (INCREMENTAL)"
-%openMvgPath%\openMVG_main_SfM -i %workSfmSpace%\matches\sfm_data.json -m %workSfmSpace%\matches -o %workSfmSpace% -s global        -M  %workSfmSpace%\matches\matches.e.bin
+echo "6. Incremental reconstruction(GLOBAL)  (INCREMENTAL)"
+%openMvgPath%\openMVG_main_SfM -i %workSfmSpace%\matches\sfm_data.json -m %workSfmSpace%\matches -o %workSfmSpace% -s GLOBAL        -M  %workSfmSpace%\matches\matches.e.bin
 
 echo "7. Export to openMVS"
-%openMvgPath%\openMVG_main_openMVG2openMVS -i %workSfmSpace%/sfm_data.bin -o %workMvsSpace%/scene.mvs -d %workMvsSpace%/images   
+%openMvgPath%\openMVG_main_openMVG2openMVS -i %workSfmSpace%\sfm_data.bin -o %workMvsSpace%\scene.mvs -d %workMvsSpace%\images   
 
-
-run2.bat
+ 
+::run2.bat
 ::pause
 
 ::::openMVG_main_SfM::

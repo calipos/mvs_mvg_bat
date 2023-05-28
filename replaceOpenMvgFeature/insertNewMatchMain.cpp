@@ -347,21 +347,22 @@ int replaceFeature(const std::string& landmarksRoot, const std::string& sfmJsonP
 	std::unique_ptr<openMVG::features::SIFT_Image_describer> image_describer(new openMVG::features::SIFT_Image_describer(openMVG::features::SIFT_Image_describer::Params(), !false));
 
 	const std::string featureRoot = stlplus::folder_part(sfmJsonPath);
-	const std::string sImage_describer = stlplus::create_filespec(featureRoot, "image_describer", "json");
-	std::unique_ptr<openMVG::features::Regions> regions_type = openMVG::features::Init_region_type_from_file(sImage_describer);
-	if (!regions_type)
-	{
-		OPENMVG_LOG_ERROR << "Invalid: " << sImage_describer << " regions type file.";
-		return EXIT_FAILURE;
-	}
+	const std::string sImage_describer = stlplus::create_filespec(featureRoot, "image_describer", "json"); 
+	//std::unique_ptr<openMVG::features::Regions> regions_type = openMVG::features::Init_region_type_from_file(sImage_describer);
+	//if (!regions_type)
+	//{
+	//	OPENMVG_LOG_ERROR << "Invalid: " << sImage_describer << " regions type file.";
+	//	return EXIT_FAILURE;
+	//}
 	openMVG::sfm::SfM_Data sfm_data;
-	if (!openMVG::sfm::Load(sfm_data, sfmJsonPath, openMVG::sfm::ESfM_Data(openMVG::sfm::VIEWS)))
+	if (!openMVG::sfm::Load(sfm_data, sfmJsonPath, openMVG::sfm::ESfM_Data(openMVG::sfm::ALL)))
 	{
 		OPENMVG_LOG_ERROR << "The input SfM_Data file \"" << sfmJsonPath << "\" cannot be read.";
 		return EXIT_FAILURE;
 	}
 	int landmarkCnt = -1;
-	for (auto iter = sfm_data.views.begin(); iter!= sfm_data.views.end();)
+	auto iter = sfm_data.views.begin();
+	while (  iter!= sfm_data.views.end())
 	{   
 		const std::string imgName= iter->second->s_Img_path;
 		std::string jsonPath = stlplus::create_filespec(landmarksRoot, imgName, "json");   
@@ -384,7 +385,17 @@ int replaceFeature(const std::string& landmarksRoot, const std::string& sfmJsonP
 		}
 		catch (const std::exception&)
 		{
-			iter = sfm_data.views.erase(iter);
+			std::cout << "  1 "<< iter->second->s_Img_path << std::endl;			
+			try
+			{
+				 sfm_data.views.erase(iter++);
+			}
+			catch (const std::exception&e)
+			{
+				std::cout <<e.what() << std::endl;
+			}
+			std::cout << "  3 ";
+			std::cout << "  2 " << iter->second->s_Img_path << std::endl;
 			continue;
 		}
 		if (landmarkCnt<0)
@@ -402,9 +413,7 @@ int replaceFeature(const std::string& landmarksRoot, const std::string& sfmJsonP
 		std::string stem = imgName.substr(0, imgName.length() - extension.length() - 1);
 		std::string thisFeaturePath = stlplus::create_filespec(featureRoot, stem, "feat"); 
 		std::string thisDescripPath = stlplus::create_filespec(featureRoot, stem, "desc");
-		std::cout << "thisFeaturePath : " << thisFeaturePath << std::endl;
-		std::cout << "thisDescripPath : " << thisDescripPath << std::endl;
-		image_describer->Load(regions_ptr.get(), thisFeaturePath, thisDescripPath);
+		//image_describer->Load(regions_ptr.get(), thisFeaturePath, thisDescripPath);
 		regions_ptr.get()->Features().clear();
 		regions_ptr.get()->Descriptors().clear();
 		for (int i = 0; i < data.landmarks.size(); i++)
@@ -414,10 +423,22 @@ int replaceFeature(const std::string& landmarksRoot, const std::string& sfmJsonP
 			thisFeat.y() = data.landmarks[i][1]; 
 			regions_ptr.get()->Features().emplace_back(thisFeat);
 			regions_ptr.get()->Descriptors().emplace_back(getRandDescripBaesOnIdx(descriptorLength,i)); 
-		}
-
+		} 
+		std::cout << "thisFeaturePath : " << thisFeaturePath << " : "<< regions_ptr.get()->Features().size() <<std::endl;
+		std::cout << "thisDescripPath : " << thisDescripPath << " : "<< regions_ptr.get()->Descriptors().size() <<std::endl;
 		image_describer->Save(regions_ptr.get(), thisFeaturePath, thisDescripPath);
 		iter++;
+	}
+
+	if (!openMVG::sfm::Save(sfm_data, sfmJsonPath, openMVG::sfm::ESfM_Data(openMVG::sfm::ALL)))
+	{
+		OPENMVG_LOG_ERROR << "The input SfM_Data file \"" << sfmJsonPath << "\" cannot be write.";
+		return EXIT_FAILURE;
+	}
+	if (!openMVG::sfm::Save(sfm_data, sfmJsonPath+".json", openMVG::sfm::ESfM_Data(openMVG::sfm::ALL)))
+	{
+		OPENMVG_LOG_ERROR << "The input SfM_Data file \"" << sfmJsonPath << "\" cannot be write.";
+		return EXIT_FAILURE;
 	}
 	return 0;
 }
