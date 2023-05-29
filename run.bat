@@ -61,13 +61,13 @@ echo "4. Filter matches"
 
 
 echo "6. Incremental reconstruction(GLOBAL)  (INCREMENTAL)"
-%openMvgPath%\openMVG_main_SfM -i %workSfmSpace%\matches\sfm_data.json -m %workSfmSpace%\matches -o %workSfmSpace% -s GLOBAL        -M  %workSfmSpace%\matches\matches.e.bin
+%openMvgPath%\openMVG_main_SfM -i %workSfmSpace%\matches\sfm_data.json -m %workSfmSpace%\matches -o %workSfmSpace% -s INCREMENTAL        -M  %workSfmSpace%\matches\matches.e.bin
 
 echo "7. Export to openMVS"
 %openMvgPath%\openMVG_main_openMVG2openMVS -i %workSfmSpace%\sfm_data.bin -o %workMvsSpace%\scene.mvs -d %workMvsSpace%\images   
 
  
-::run2.bat
+run2.bat
 ::pause
 
 ::::openMVG_main_SfM::
