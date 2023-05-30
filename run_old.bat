@@ -19,23 +19,12 @@ mkdir %workMvsSpace%
 
 echo "-1. prepare images"
 python.exe .\mp42jpg.py  %piciturePath%\9.mp4  5
-
-bin\DlibLandmark.exe  %piciturePath% %workLmsSpace%
-::python  mediapip.py %piciturePath% %workLmsSpace%
-python deleteImgs.py %workLmsSpace% %piciturePath%
-
+ 
 echo "0. Intrinsics analysis"
 %openMvgPath%\openMVG_main_SfMInit_ImageListing -i %piciturePath% -o %workSfmSpace%\matches -d  sensor_width_camera_database.txt -f 2000
-
-::python.exe .\collectImgPathForLandmarks.py %workSfmSpace%\matches\sfm_data.json  imagePathSet.txt %workLmsSpace%
  
 echo "1. Compute features"
-%openMvgPath%\openMVG_main_ComputeFeatures -i %workSfmSpace%\matches\sfm_data.json -o %workSfmSpace%\matches -m SIFT   -p NORMAL
-
-echo "1.5  replace facial features"
-bin\ReplaceOpenMvgFeature.exe  %workLmsSpace%  %workSfmSpace%\matches\sfm_data.json
- 
-::xcopy /y   %workSfmSpace%\matches\sfm_data.json.json %workSfmSpace%\matches\sfm_data.json
+%openMvgPath%\openMVG_main_ComputeFeatures -i %workSfmSpace%\matches\sfm_data.json -o %workSfmSpace%\matches -m SIFT  
  
 
 echo "2. Compute pairs"

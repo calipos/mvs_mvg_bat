@@ -419,8 +419,13 @@ int replaceFeature(const std::string& landmarksRoot, const std::string& sfmJsonP
 		for (int i = 0; i < data.landmarks.size(); i++)
 		{
 			openMVG::features::SIFT_Regions::FeatureT thisFeat;
+			if (data.landmarks[i][0]<0)
+			{
+				continue;
+			}
 			thisFeat.x() = data.landmarks[i][0];
 			thisFeat.y() = data.landmarks[i][1]; 
+			
 			regions_ptr.get()->Features().emplace_back(thisFeat);
 			regions_ptr.get()->Descriptors().emplace_back(getRandDescripBaesOnIdx(descriptorLength,i)); 
 		} 
