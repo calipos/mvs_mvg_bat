@@ -18,10 +18,10 @@ mkdir %workLmsSpace%
 mkdir %workMvsSpace% 
 
 echo "-1. prepare images"
-python.exe .\mp42jpg.py  %piciturePath%\9.mp4  5
+python.exe .\mp42jpg.py  %piciturePath%\8.mp4  15
 
-bin\DlibLandmark.exe  %piciturePath% %workLmsSpace%
-::python  mediapip.py %piciturePath% %workLmsSpace%
+::bin\DlibLandmark.exe  %piciturePath% %workLmsSpace%
+python  mediapip.py %piciturePath% %workLmsSpace%
 python deleteImgs.py %workLmsSpace% %piciturePath%
 
 echo "0. Intrinsics analysis"

@@ -1,4 +1,4 @@
-echo off
+::secho off
 set piciturePath=D:\repo\mvs_mvg_bat\viewer
 set workSpace=D:\repo\mvs_mvg_bat\viewerout
 set workSfmSpace=D:\repo\mvs_mvg_bat\viewerout\sfm
@@ -7,11 +7,12 @@ echo %piciturePath%
 echo %workSpace%
 echo %workSfmSpace%
 echo %workMvsSpace%
-set openMvsPath=D:\repo\openMVS\build-2019\install\bin\OpenMVS
+set openMvsPath=D:\repo\openMVS\build-vs2019\install\bin\OpenMVS
 
+xcopy /y .\Densify.ini %workMvsSpace%
 
 echo "12. Densify point cloud"
-%openMvsPath%\DensifyPointCloud.exe %workMvsSpace%/scene.mvs --dense-config-file %workMvsSpace%/Densify.ini --resolution-level 3 --number-views 16 -w "%workMvsSpace%"  --verbosity 3
+%openMvsPath%\DensifyPointCloud.exe %workMvsSpace%/scene.mvs --dense-config-file %workMvsSpace%/Densify.ini --resolution-level 3 --number-views 3 -w "%workMvsSpace%"  --verbosity 6
 ::
 echo "13. Reconstruct the mesh"
 %openMvsPath%\ReconstructMesh scene_dense.mvs -w "%workMvsSpace%"

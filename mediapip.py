@@ -100,9 +100,12 @@ class MyThread(Thread):
         return self.result
 def rays_mesh_intersect2(s,dirs,V,F):
     hitCnt=np.empty([len(dirs)],dtype=int)
+    threads=[]
     for i in range(len(dirs)):
         t1 = MyThread(ray_mesh_intersect, (s,dirs[i],V,F))
         t1.start() 
+        threads.append(t1)
+    for i in range(len(dirs)): 
         t1.join() 
         hitCnt[i] = t1.getResult() 
     return hitCnt
