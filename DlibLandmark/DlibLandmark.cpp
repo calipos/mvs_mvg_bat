@@ -145,7 +145,7 @@ std::string deleteJsonShell(const std::string& json)
 	return retJson;
 }
 //std::string changeTail(const std::string&path, const std::string& newTail)
-std::string landmarkDataPath = "D:/ucl360/libraries2019/dlib1924/shape_predictor_68_face_landmarks.dat";
+std::string landmarkDataPath = "shape_predictor_68_face_landmarks.dat";
  
 std::pair<std::vector<std::string>, std::vector<std::string>>readFromParam(const std::string& path)
 {
@@ -170,18 +170,78 @@ std::pair<std::vector<std::string>, std::vector<std::string>>readFromParam(const
 	}
 	
 }
+std::vector<int>faceOutline{ 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 };
+std::vector<int>leftEyebrow{ 17,18,19,20,21 };
+std::vector<int>rightEyebrow{ 22,23,24,25,26 };
+std::vector<int>noseBridge{ 27,28,29,30 };
+std::vector<int>nostril{ 31,32,33,34,35 };
+std::vector<int>leftEye{ 36,37,38,39,40,41 };
+std::vector<int>rightEye{ 42,43,44,45,46,47 };
+std::vector<int>mouth{ 48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67 };
+std::map<std::string, std::vector<int>>faceLandmarkName =
+{
+	{"ALL",{0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21 ,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41, 42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67 }},
+{"FACEOUTLINE",faceOutline},
+{"LEFTEYEBROW",leftEyebrow},
+{"RIGHTEYEBROW",rightEyebrow},
+{"NOSEBRIDGE",noseBridge},
+{"NOSTRIL",nostril},
+{"LEFTEYE",leftEye},
+{"RIGHTEYE",rightEye},
+{"MOUTH",mouth},
+};
 int main(int argc, char** argv)
 {
+	std::cout<<"\tparameter support: ALL FACEOUTLINE LEFTEYEBROW RIGHTEYEBROW NOSEBRIDGE NOSTRIL LEFTEYE RIGHTEYE MOUTH" << std::endl;
+	std::vector<int>landmarkPick;
 	std::vector<dlib::file> files;
 	std::string jsonRoot;
-	if (argc<2)
+	if (argc<3)
 	{
 		std::cout<<"cmd picPath landmarksDir" << std::endl;
 		return -1;
 	}
 	try
 	{
- 
+		if (argc<4)
+		{
+			landmarkPick.insert(landmarkPick.end(), faceOutline.begin(), faceOutline.end());
+			landmarkPick.insert(landmarkPick.end(), leftEyebrow.begin(), leftEyebrow.end());
+			landmarkPick.insert(landmarkPick.end(), rightEyebrow.begin(), rightEyebrow.end());
+			landmarkPick.insert(landmarkPick.end(), noseBridge.begin(), noseBridge.end());
+			landmarkPick.insert(landmarkPick.end(), nostril.begin(), nostril.end());
+			landmarkPick.insert(landmarkPick.end(), leftEye.begin(), leftEye.end());
+			landmarkPick.insert(landmarkPick.end(), rightEye.begin(), rightEye.end());
+			landmarkPick.insert(landmarkPick.end(), mouth.begin(), mouth.end());
+			std::cout << "ALL : "  << std::endl;
+		}
+		else
+		{
+			landmarkPick.clear();
+			std::string facePartParamS = "";
+			for (int i = 3; i < argc; i++)
+			{
+				facePartParamS += std::string(argv[i]);
+				facePartParamS +=" ";
+			}
+			for(auto&d: facePartParamS)d = std::toupper(d);
+			std::vector<std::string>facePartParam = splitString(facePartParamS," ",true);
+			for (const auto&d: facePartParam)
+			{
+				std::cout << d;
+				if (faceLandmarkName.count(d)!=0)
+				{ 
+					std::cout << " add . "  << std::endl;
+					landmarkPick.insert(landmarkPick.end(), faceLandmarkName[d].begin(), faceLandmarkName[d].end());
+				}
+				else
+				{
+					std::cout << " not known . " << std::endl;
+				}
+			}
+		}
+		std::cout << "landmarkPick.size() = "<< landmarkPick.size() << std::endl;
+
 		dlib::directory picPath(argv[1]);
 		dlib::directory jsonPath(argv[2]);
 		
@@ -231,10 +291,13 @@ int main(int argc, char** argv)
 		} 
         dlib::full_object_detection shape = sp(img, dets[0]);    
 		Landmarks thisImgLandmark;
-		thisImgLandmark.landmarks.resize(shape.num_parts());
+		thisImgLandmark.landmarks.reserve(shape.num_parts());
         for (int i = 0; i < shape.num_parts(); i++)
         {
-			thisImgLandmark.landmarks[i] = std::vector<double>{ static_cast<double>(shape.part(i).x()),static_cast<double>(shape.part(i).y()) };
+			if (landmarkPick.end()!=std::find(landmarkPick.begin(), landmarkPick.end(),i))
+			{
+				thisImgLandmark.landmarks.emplace_back(std::vector<double>{ static_cast<double>(shape.part(i).x()), static_cast<double>(shape.part(i).y()) });
+			}
         }
 		std::stringstream os;
 		{

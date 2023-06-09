@@ -18,9 +18,11 @@ mkdir %workLmsSpace%
 mkdir %workMvsSpace% 
 
 echo "-1. prepare images"
-python.exe .\mp42jpg.py  %piciturePath%\8.mp4  15
+python.exe .\mp42jpg.py  %piciturePath%\9.mp4  8
 
-::bin\DlibLandmark.exe  %piciturePath% %workLmsSpace%
+:: parameter support: ALL FACEOUTLINE LEFTEYEBROW RIGHTEYEBROW NOSEBRIDGE NOSTRIL LEFTEYE RIGHTEYE MOUTH
+::bin\DlibLandmark.exe  %piciturePath% %workLmsSpace% FACEOUTLINE LEFTEYEBROW RIGHTEYEBROW NOSEBRIDGE LEFTEYE RIGHTEYE MOUTH 
+
 python  mediapip.py %piciturePath% %workLmsSpace%
 python deleteImgs.py %workLmsSpace% %piciturePath%
 

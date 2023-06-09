@@ -1,0 +1,17 @@
+echo off
+set piciturePath=D:\repo\mvs_mvg_bat\viewer
+set workSpace=D:\repo\mvs_mvg_bat\viewerout
+set workSfmSpace=D:\repo\mvs_mvg_bat\viewerout\sfm
+set workMvsSpace=D:\repo\mvs_mvg_bat\viewerout\mvs
+set workLmsSpace=D:\repo\mvs_mvg_bat\viewerout\landmarks
+set openMvgPath=D:\repo\openMVG\src\build-2019\installRelease\bin
+echo %piciturePath%
+echo %workSpace%
+echo %workSfmSpace%
+echo %workMvsSpace%
+del  %workMvsSpace%\*.dmap
+del  %workMvsSpace%\scene_dense.mvs
+del  %workMvsSpace%\*.ply
+del  %workMvsSpace%\*.png
+del  %workMvsSpace%\*.conf.pfm
+del  %workMvsSpace%\*.mlp
