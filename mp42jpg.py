@@ -9,11 +9,24 @@ def deletFile(folder,tail):
             del_file =os.path.join(folder, file)  
             os.remove(del_file) 
             print("已经删除：",del_file) 
- 
+def num2abcd(num):
+    if num>26*26*26*26: return None
+    else:
+        a=num%26
+        a_=num//26
+        b=a_%26
+        b_=a_//26
+        c=b_%26
+        c_=b_//26
+        d=c_%26
+        d_=c_//26 
+        return str(chr(d+97)+chr(c+97)+chr(b+97)+chr(a+97))
 def save_image(image, addr, num):
-    address = addr + str(num) + '.jpg'
+    address = addr + num2abcd(num) + '.jpg'
     imwrite(address, image)
- 
+
+
+    
 if __name__ == '__main__':
     video_path = sys.argv[1]  
     time_interval=int(sys.argv[2] )
