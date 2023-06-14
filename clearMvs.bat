@@ -13,5 +13,8 @@ del  %workMvsSpace%\*.dmap
 del  %workMvsSpace%\scene_dense.mvs
 del  %workMvsSpace%\*.ply
 del  %workMvsSpace%\*.png
+del  %workMvsSpace%\*.obj
+del  %workMvsSpace%\*.mtl
+del  %workMvsSpace%\*.log
 del  %workMvsSpace%\*.conf.pfm
 del  %workMvsSpace%\*.mlp
