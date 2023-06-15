@@ -18,7 +18,7 @@ mkdir %workLmsSpace%
 mkdir %workMvsSpace% 
 
 echo "-1. prepare images"
-python.exe .\mp42jpg.py  %piciturePath%\9.mp4  10
+python.exe .\mp42jpg.py  %piciturePath%\10.mp4  3
 
 :: parameter support: ALL FACEOUTLINE LEFTEYEBROW RIGHTEYEBROW NOSEBRIDGE NOSTRIL LEFTEYE RIGHTEYE MOUTH
 ::bin\DlibLandmark.exe  %piciturePath% %workLmsSpace% FACEOUTLINE LEFTEYEBROW RIGHTEYEBROW NOSEBRIDGE LEFTEYE RIGHTEYE MOUTH 
@@ -27,7 +27,7 @@ python  mediapip.py %piciturePath% %workLmsSpace%
 python deleteImgs.py %workLmsSpace% %piciturePath%
 
 echo "0. Intrinsics analysis"
-%openMvgPath%\openMVG_main_SfMInit_ImageListing -i %piciturePath% -o %workSfmSpace%\matches -d  sensor_width_camera_database.txt -f 2000
+%openMvgPath%\openMVG_main_SfMInit_ImageListing -i %piciturePath% -o %workSfmSpace%\matches -d  sensor_width_camera_database.txt -f 2000   -c 1
 
 ::python.exe .\collectImgPathForLandmarks.py %workSfmSpace%\matches\sfm_data.json  imagePathSet.txt %workLmsSpace%
  
@@ -51,7 +51,7 @@ echo "3. Compute matches"
 
 
 echo "4. Filter matches"
-%openMvgPath%\openMVG_main_GeometricFilter -i %workSfmSpace%\matches\sfm_data.json -m %workSfmSpace%\matches\matches.putative.bin -o %workSfmSpace%\matches\matches.e.bin  -g e
+%openMvgPath%\openMVG_main_GeometricFilter -i %workSfmSpace%\matches\sfm_data.json -m %workSfmSpace%\matches\matches.putative.bin -o %workSfmSpace%\matches\matches.f.bin  -g f
 ::D:\repo\OpenMVG.release\openMVG_main_GeometricFilter -i %workSfmSpace%\matches\sfm_data.json -m %workSfmSpace%\matches\matches.putative.bin -o %workSfmSpace%\matches\matches.fe.bin  -g e
 
 
@@ -62,13 +62,13 @@ echo "4. Filter matches"
 
 
 echo "6. Incremental reconstruction(GLOBAL)  (INCREMENTAL)"
-%openMvgPath%\openMVG_main_SfM -i %workSfmSpace%\matches\sfm_data.json -m %workSfmSpace%\matches -o %workSfmSpace% -s INCREMENTAL        -M  %workSfmSpace%\matches\matches.e.bin
+%openMvgPath%\openMVG_main_SfM -i %workSfmSpace%\matches\sfm_data.json -m %workSfmSpace%\matches -o %workSfmSpace% -s INCREMENTAL        -M  %workSfmSpace%\matches\matches.f.bin
 
 echo "7. Export to openMVS"
 %openMvgPath%\openMVG_main_openMVG2openMVS -i %workSfmSpace%\sfm_data.bin -o %workMvsSpace%\scene.mvs -d %workMvsSpace%\images   
 
  
-run2.bat
+::run2.bat
 ::pause
 
 ::::openMVG_main_SfM::

@@ -137,7 +137,6 @@ def landmark2d(img,detection_result):
 def draw_landmarks_on_image(rgb_image, detection_result):
   face_landmarks_list = detection_result.face_landmarks
   annotated_image = np.copy(rgb_image)
-  print(len(face_landmarks_list))
   # Loop through the detected faces to visualize.
   for idx in range(len(face_landmarks_list)):
     face_landmarks = face_landmarks_list[idx]
@@ -245,12 +244,13 @@ if __name__ == '__main__':
                                            output_facial_transformation_matrixes=True,
                                            num_faces=1)
     detector = vision.FaceLandmarker.create_from_options(options)
+    index_=0
     for imgName in imgNames:
         imgPath = os.path.join(imgsRoot,imgName)
         if not imgPath.endswith('.jpg'):continue
         jsonPath = os.path.join(jsonRoot,imgName)+'.json'
         showPath = os.path.join(jsonRoot,imgName)+'.jpg'
-        print(imgPath)
+        print(imgPath,index_,'/',len(imgNames))
         image = mp.Image.create_from_file(imgPath)
         detection_result = detector.detect(image)
         annotated_image = draw_landmarks_on_image(image.numpy_view(), detection_result)
