@@ -251,6 +251,7 @@ if __name__ == '__main__':
         jsonPath = os.path.join(jsonRoot,imgName)+'.json'
         showPath = os.path.join(jsonRoot,imgName)+'.jpg'
         print(imgPath,index_,'/',len(imgNames))
+        index_+=1
         image = mp.Image.create_from_file(imgPath)
         detection_result = detector.detect(image)
         annotated_image = draw_landmarks_on_image(image.numpy_view(), detection_result)

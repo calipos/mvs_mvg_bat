@@ -27,7 +27,7 @@ python  mediapip.py %piciturePath% %workLmsSpace%
 python deleteImgs.py %workLmsSpace% %piciturePath%
 
 echo "0. Intrinsics analysis"
-%openMvgPath%\openMVG_main_SfMInit_ImageListing -i %piciturePath% -o %workSfmSpace%\matches -d  sensor_width_camera_database.txt -f 2000   -c 1
+%openMvgPath%\openMVG_main_SfMInit_ImageListing -i %piciturePath% -o %workSfmSpace%\matches -d  sensor_width_camera_database.txt -f 2000   -c 2
 
 ::python.exe .\collectImgPathForLandmarks.py %workSfmSpace%\matches\sfm_data.json  imagePathSet.txt %workLmsSpace%
  
@@ -59,10 +59,10 @@ echo "4. Filter matches"
 ::echo "5. Incremental reconstruction(sequential)"
 ::D:\repo\openMVG\src\build-2019\Windows-AMD64-Release\Release\openMVG_main_SfM -i %workSfmSpace%\matches\sfm_data.json -m %workSfmSpace%\matches -o %workSfmSpace% -s INCREMENTAL   
 
-
+ 
 
 echo "6. Incremental reconstruction(GLOBAL)  (INCREMENTAL)"
-%openMvgPath%\openMVG_main_SfM -i %workSfmSpace%\matches\sfm_data.json -m %workSfmSpace%\matches -o %workSfmSpace% -s INCREMENTAL        -M  %workSfmSpace%\matches\matches.f.bin
+%openMvgPath%\openMVG_main_SfM -i %workSfmSpace%\matches\sfm_data.json -m %workSfmSpace%\matches -o %workSfmSpace% -s GLOBAL        -M  %workSfmSpace%\matches\matches.f.bin  -f  NONE
 
 echo "7. Export to openMVS"
 %openMvgPath%\openMVG_main_openMVG2openMVS -i %workSfmSpace%\sfm_data.bin -o %workMvsSpace%\scene.mvs -d %workMvsSpace%\images   
