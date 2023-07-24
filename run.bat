@@ -18,7 +18,7 @@ mkdir %workLmsSpace%
 mkdir %workMvsSpace% 
 
 echo "-1. prepare images"
-python.exe .\mp42jpg.py  %piciturePath%\10.mp4  4
+python.exe .\mp42jpg.py  %piciturePath%\11.mp4  2
 
 :: parameter support: ALL FACEOUTLINE LEFTEYEBROW RIGHTEYEBROW NOSEBRIDGE NOSTRIL LEFTEYE RIGHTEYE MOUTH
 ::bin\DlibLandmark.exe  %piciturePath% %workLmsSpace% FACEOUTLINE LEFTEYEBROW RIGHTEYEBROW NOSEBRIDGE LEFTEYE RIGHTEYE MOUTH 
@@ -66,6 +66,7 @@ echo "6. Incremental reconstruction(GLOBAL)  (INCREMENTAL)"
 ::            openMVG_main_SfM -i D:\repo\mvs_mvg_bat\viewerout\sfm\matches\sfm_data.json -m D:\repo\mvs_mvg_bat\viewerout\sfm\matches -o D:\repo\mvs_mvg_bat\viewerout\sfm -s INCREMENTAL        -M  D:\repo\mvs_mvg_bat\viewerout\sfm\matches\matches.f.bin  -f  NONE
 
 echo "7. Export to openMVS"
+echo %openMvgPath%\openMVG_main_openMVG2openMVS -i %workSfmSpace%\sfm_data.bin -o %workMvsSpace%\scene.mvs -d %workMvsSpace%\images   
 :: %openMvgPath%\openMVG_main_openMVG2openMVS -i %workSfmSpace%\sfm_data.bin -o %workMvsSpace%\scene.mvs -d %workMvsSpace%\images   
 
  

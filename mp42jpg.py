@@ -1,3 +1,4 @@
+import cv2
 from cv2 import VideoCapture
 from cv2 import imwrite
 import os
@@ -12,7 +13,8 @@ def deletFile(folder,tail):
  
 def save_image(image, addr, num):
     address = addr + str(num).zfill(5) + '.jpg'
-    imwrite(address, image)
+    img_90 = cv2.flip(cv2.transpose(image), 1)
+    imwrite(address, img_90)
 
 
     
