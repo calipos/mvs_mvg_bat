@@ -29,6 +29,10 @@ DlibLandmark/x64/*
 DlibLandmark/build/*
 replaceOpenMvgFeature/build/*
 replaceOpenMvgFeature/build-vs2019/*
+*.pyc
+PersistentIndependentParticles/reference_model/*
+PersistentIndependentParticles/*.gif
+build-2019-shared/*
 *.exe
 *.task
 *.dat

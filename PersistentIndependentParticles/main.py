@@ -8,14 +8,59 @@ import saverloader
 import imageio.v2 as imageio
 from nets.pips import Pips
 import utils.improc
+from utils.improc import ColorMap2d
 import random
 import glob
 import torch
-import torch.nn.functional as F
-from tensorboardX import SummaryWriter
+import torch.nn.functional as F  
+
+device='cpu'  #cpu #cuda
+
+def draw_circ_on_images_py(rgbs, traj, vis, linewidth=1, show_dots=False, cmap='coolwarm', maxdist=None):
+    # all inputs are numpy tensors
+    # rgbs is a list of 3,H,W
+    # traj is S,2
+    S ,C,H, W = rgbs[0].shape
+    assert(C==3)
+    S1, N, D = traj[0].shape
+    assert(D==2)
+    rgbs = rgbs.reshape(S ,C,H, W)
+    if device=='cuda':traj = traj.reshape(S ,-1,2).cpu().numpy()
+    else:traj = traj.reshape(S ,-1,2).numpy()
+    
+    
+  
+    bremm = ColorMap2d()
+    if device=='cuda':rgbs = [rgb.permute((1,2,0)).cpu().numpy().copy().astype(np.uint8) for rgb in rgbs]
+    else:rgbs = [rgb.permute((1,2,0)).numpy().copy().astype(np.uint8) for rgb in rgbs]
+    
+    
+ 
+    traj_ = traj[0,:].astype(np.float32)
+    traj_[:,0] /= float(W)
+    traj_[:,1] /= float(H)
+    color = bremm(traj_)
+    # print('color', color)
+    color = (color*255).astype(np.uint8) 
+    # print('color', color)
+    color = color.astype(np.int) 
+    traj = traj.astype(np.int32) 
+    x = np.clip(traj[0,:,0], 0, W-1).astype(np.int) 
+    y = np.clip(traj[0,:,1], 0, H-1).astype(np.int) 
+    color_ = rgbs[0][y,x]
+    for s in range(S):
+        for n in range(N):
+            cv2.circle(rgbs[s], (traj[s,n,0], traj[s,n,1]), linewidth*4, color[n].tolist(), -1)
+            #vis_color = int(np.squeeze(vis[s])*255)
+            #vis_color = (vis_color,vis_color,vis_color)
+            #cv2.circle(rgbs[s], (traj[s,0], traj[s,1]), linewidth*2, vis_color, -1)            
+    return rgbs
 
 def run_model2(model, rgbs, xy0):
-    rgbs = rgbs.float() # B, S, C, H, W
+    if device=='cpu':
+        rgbs = rgbs.float() # B, S, C, H, W
+    else:rgbs = rgbs.cuda().float() # B, S, C, H, W
+        
 
     B, S, C, H, W = rgbs.shape
     rgbs_ = rgbs.reshape(B*S, C, H, W)
@@ -31,7 +76,7 @@ def run_model2(model, rgbs, xy0):
 
     cur_frame = 0
     done = False
-    traj_e = torch.zeros((B, S, N,2), dtype=torch.float32, device='cpu')
+    traj_e = torch.zeros((B, S, N,2), dtype=torch.float32, device=device)
     traj_e[:,0] = xy0 # B,N,2 
     feat_init = None
     while not done:
@@ -39,10 +84,11 @@ def run_model2(model, rgbs, xy0):
         if end_frame>S:end_frame=S
         rgb_seq = rgbs[:,cur_frame:end_frame]
         S_local = rgb_seq.shape[1]
-        rgb_seq = torch.cat([rgb_seq, rgb_seq[:,-1].unsqueeze(1).repeat(1,8-S_local,1,1,1)], dim=1)
+        if S_local!=8:
+            rgb_seq = torch.cat([rgb_seq, rgb_seq[:,-1].unsqueeze(1).repeat(1,8-S_local,1,1,1)], dim=1)
     
 
-        outs = model(traj_e[:,cur_frame], rgb_seq, iters=6, feat_init=None, return_feat=True)
+        outs = model(traj_e[:,cur_frame], rgb_seq, iters=6, feat_init=feat_init, return_feat=True)
         preds = outs[0]
         vis = outs[2] # B, S, 1
         feat_init = outs[3]
@@ -64,34 +110,15 @@ def run_model2(model, rgbs, xy0):
         #     if si == si_earliest:
         #         thr -= 0.02
         #         si = si_last
-        cur_frame = cur_frame + 8
+        cur_frame = cur_frame + 8-1
         if cur_frame >= S:
             done = True
     pad = 50
-    rgbs = F.pad(rgbs.reshape(B*S, 3, H, W), (pad, pad, pad, pad), 'constant', 0).reshape(B, S, 3, H+pad*2, W+pad*2)
-    trajs_e = trajs_e + pad
-    prep_rgbs = utils.improc.preprocess_color(rgbs)
-    gray_rgbs = torch.mean(prep_rgbs, dim=2, keepdim=True).repeat(1, 1, 3, 1, 1)
-    
-    writer_t = SummaryWriter('./00/t', max_queue=10, flush_secs=60)
-    sw = utils.improc.Summ_writer(
-        writer=writer_t,
-        global_step=0,
-        log_freq=10,
-        fps=12,
-        scalar_freq=int(log_freq/2),
-        just_gif=True)
 
-    kp_vis = sw.summ_traj2ds_on_rgbs('video_%d/kp_%d_trajs_e_on_rgbs' % (sw.global_step, n), trajs_e[0:1,:,n:n+1], gray_rgbs[0:1,:S], cmap='spring', linewidth=linewidth)
-    # write to disk, in case that's more convenient
-    kp_list = list(kp_vis.unbind(1))
-    kp_list = [kp[0].permute(1,2,0).cpu().numpy() for kp in kp_list]
-    kp_list = [Image.fromarray(kp) for kp in kp_list]
-    out_fn = './chain_out_%d.gif' % sw.global_step
-    kp_list[0].save(out_fn, save_all=True, append_images=kp_list[1:])
-    print('saved %s' % out_fn)
     
-    return  trajs_e-pad
+    rgbs = draw_circ_on_images_py(rgbs,traj_e,None)
+    imageio.mimsave("test.gif",rgbs,fps=4)
+    return  traj_e
 
 
 def run_model(model, rgbs, N):
@@ -168,13 +195,14 @@ def run_model(model, rgbs, N):
     return trajs_e-pad
     
 if __name__ == '__main__':    
+    
     exp_name = '00' # (exp_name is used for logging notes that correspond to different runs)
     init_dir = './reference_model'
 
     ## choose hyps
     B = 1
-    S = 50
-    xy0=torch.tensor([[450,150],[500,200]])
+    S = 100
+    xy0=torch.tensor([[384,350],[266,304]])
     xy0=xy0.reshape(B,-1,2)
     N = xy0.shape[1]  # number of points to track
 
@@ -198,6 +226,7 @@ if __name__ == '__main__':
     global_step = 0
 
     model = Pips(stride=2)
+    if device != 'cpu' :model=model.cuda()
     parameters = list(model.parameters())
     if init_dir:
         _ = saverloader.load(init_dir, model)
@@ -230,6 +259,7 @@ if __name__ == '__main__':
             iter_time = time.time()-iter_start_time
             print('%s; step %06d/%d; rtime %.2f; itime %.2f' % (
                 model_name, global_step, max_iters, read_time, iter_time))
+            break
         except FileNotFoundError as e:
             print('error', e)
             

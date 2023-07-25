@@ -13,8 +13,9 @@ def deletFile(folder,tail):
  
 def save_image(image, addr, num):
     address = addr + str(num).zfill(5) + '.jpg'
-    img_90 = cv2.flip(cv2.transpose(image), 1)
-    imwrite(address, img_90)
+    #img_90 = cv2.flip(cv2.transpose(image), 1)
+    #imwrite(address, img_90)
+    imwrite(address, image)
 
 
     
