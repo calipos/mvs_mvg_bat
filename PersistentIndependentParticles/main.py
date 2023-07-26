@@ -38,6 +38,9 @@ def draw_circ_on_images_py(rgbPaths, traj, vis, linewidth=1, show_dots=False, cm
     for fn in rgbPaths:
         im = imageio.imread(fn)
         im = im.astype(np.uint8)
+        assert(im.shape[0]==H)
+        assert(im.shape[1]==W)
+        assert(im.shape[2]==3)
         rgbs.append(im)
     
     
@@ -47,16 +50,17 @@ def draw_circ_on_images_py(rgbPaths, traj, vis, linewidth=1, show_dots=False, cm
     traj_[:,1] /= float(H)
     color = bremm(traj_)
     # print('color', color)
-    color = (color*255).astype(np.uint8) 
-    # print('color', color)
+    color = (color*255).astype(np.uint8)  
     color = color.astype(np.int32) 
+    print('color', color)
     traj = traj.astype(np.int32) 
     x = np.clip(traj[0,0,:,0], 0, W-1).astype(np.int32) 
     y = np.clip(traj[0,0,:,1], 0, H-1).astype(np.int32) 
     color_ = rgbs[0][y,x]
     for s in range(S):
         for n in range(N):
-            cv2.circle(rgbs[s], (traj[0,s,n,0], traj[0,s,n,1]), linewidth*4, color[n].tolist(), -1)
+            #cv2.circle(rgbs[s], (traj[0,s,n,0], traj[0,s,n,1]), linewidth*4, color[n].tolist(), -1)
+            cv2.circle(rgbs[s], (traj[0,s,n,0], traj[0,s,n,1]), linewidth*4, [0,255,0], -1)
             #vis_color = int(np.squeeze(vis[s])*255)
             #vis_color = (vis_color,vis_color,vis_color)
             #cv2.circle(rgbs[s], (traj[s,0], traj[s,1]), linewidth*2, vis_color, -1)            
@@ -123,7 +127,9 @@ def run_model2(model, rgbPaths, xy0):
         if cur_frame >= S:
             done = True 
     rgbs = draw_circ_on_images_py(rgbPaths,traj_e,None)
-    imageio.mimsave("test.gif",rgbs,fps=12)
+    #imageio.mimsave("test.gif",rgbs,fps=12)
+    for s in range(S):        cv2.imwrite("%d.jpg" % (s),rgbs[s])
+    np.savetxt('vis.txt',visTotal.reshape(-1,N).cpu().numpy(),fmt='%0.5f')
     return  traj_e,visTotal
 
 
@@ -150,7 +156,7 @@ if __name__ == '__main__':
     print('model_name', model_name)
 
 
-    model = Pips(stride=2)
+    model = Pips(stride=8)
     if device != 'cpu' :model=model.cuda()
     parameters = list(model.parameters())
     if init_dir:

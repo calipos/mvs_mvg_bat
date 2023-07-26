@@ -459,6 +459,7 @@ class Pips(nn.Module):
         fcorr_fn = CorrBlock(fmaps, num_levels=self.corr_levels, radius=self.corr_radius)
 
         if feat_init is None:
+            print("init first feature")
             # initialize features for the whole traj, using the initial feature
             ffeat = utils.samp.bilinear_sample2d(fmaps[:,0], coords[:,0,:,0], coords[:,0,:,1]).permute(0, 2, 1) # B, N, C
         else:
