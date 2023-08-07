@@ -69,6 +69,89 @@
 #include <map>
 #include <array>
 #include <string>
+#include "omp.h"
+
+#define IGL_RAY_TRI_EPSILON 0.000000001
+#define IGL_RAY_TRI_CROSS(dest,v1,v2) \
+          dest[0]=v1[1]*v2[2]-v1[2]*v2[1]; \
+          dest[1]=v1[2]*v2[0]-v1[0]*v2[2]; \
+          dest[2]=v1[0]*v2[1]-v1[1]*v2[0];
+#define IGL_RAY_TRI_DOT(v1,v2) (v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2])
+#define IGL_RAY_TRI_SUB(dest,v1,v2) \
+          dest[0]=v1[0]-v2[0]; \
+          dest[1]=v1[1]-v2[1]; \
+          dest[2]=v1[2]-v2[2]; 
+
+template<class Dtype = float>
+int intersect_triangle1(const Dtype* orig, const Dtype* dir,
+	const Dtype* vert0, const Dtype* vert1, const Dtype* vert2,
+	Dtype* t, Dtype* u, Dtype* v)
+{
+	Dtype edge1[3], edge2[3], tvec[3], pvec[3], qvec[3];
+	Dtype det, inv_det;
+
+	/* find vectors for two edges sharing vert0 */
+	IGL_RAY_TRI_SUB(edge1, vert1, vert0);
+	IGL_RAY_TRI_SUB(edge2, vert2, vert0);
+
+	/* begin calculating determinant - also used to calculate U parameter */
+	IGL_RAY_TRI_CROSS(pvec, dir, edge2);
+
+	/* if determinant is near zero, ray lies in plane of triangle */
+	det = IGL_RAY_TRI_DOT(edge1, pvec);
+
+	if (det > IGL_RAY_TRI_EPSILON)
+	{
+		/* calculate distance from vert0 to ray origin */
+		IGL_RAY_TRI_SUB(tvec, orig, vert0);
+
+		/* calculate U parameter and test bounds */
+		*u = IGL_RAY_TRI_DOT(tvec, pvec);
+		if (*u < 0.0 || *u > det)
+			return 0;
+
+		/* prepare to test V parameter */
+		IGL_RAY_TRI_CROSS(qvec, tvec, edge1);
+
+		/* calculate V parameter and test bounds */
+		*v = IGL_RAY_TRI_DOT(dir, qvec);
+		if (*v < 0.0 || *u + *v > det)
+			return 0;
+
+	}
+	else if (det < -IGL_RAY_TRI_EPSILON)
+	{
+		/* calculate distance from vert0 to ray origin */
+		IGL_RAY_TRI_SUB(tvec, orig, vert0);
+
+		/* calculate U parameter and test bounds */
+		*u = IGL_RAY_TRI_DOT(tvec, pvec);
+		/*      printf("*u=%f\n",(float)*u); */
+		/*      printf("det=%f\n",det); */
+		if (*u > 0.0 || *u < det)
+			return 0;
+
+		/* prepare to test V parameter */
+		IGL_RAY_TRI_CROSS(qvec, tvec, edge1);
+
+		/* calculate V parameter and test bounds */
+		*v = IGL_RAY_TRI_DOT(dir, qvec);
+		if (*v > 0.0 || *u + *v < det)
+			return 0;
+	}
+	else return 0;  /* ray is parallel to the plane of the triangle */
+
+
+	inv_det = 1.0 / det;
+
+	/* calculate t, ray intersects triangle */
+	*t = IGL_RAY_TRI_DOT(edge2, qvec) * inv_det;
+	(*u) *= inv_det;
+	(*v) *= inv_det;
+
+	return 1;
+}
+
 std::vector<std::string> splitString(const std::string& src, const std::string& symbols, bool repeat)
 {
 	std::vector<std::string> result;
@@ -324,13 +407,22 @@ bool StringToEnum(	const std::string& str,	ESfMSceneInitializer& scene_initializ
 }
 struct Landmarks
 {
-	std::vector<std::vector<double>>landmarks;
+	std::vector<std::vector<double>>frontLandmarks2d;
+	std::vector<std::vector<double>>frontLandmarks2dNorm;
+	std::vector<std::vector<double>>frontLandmarks3d;
+	std::vector<std::vector<double>>dirs;
+	std::vector<std::vector<int>>faces;
 	template <class Archive>
 	void serialize(Archive& ar)
 	{
-		ar(cereal::make_nvp("landMarks", landmarks));
+		ar(cereal::make_nvp("frontLandmarks2d", frontLandmarks2d));
+		ar(cereal::make_nvp("frontLandmarks2dNorm", frontLandmarks2dNorm));
+		ar(cereal::make_nvp("frontLandmarks3d", frontLandmarks3d));
+		ar(cereal::make_nvp("frontLandmarks3dNorm", dirs));
+		ar(cereal::make_nvp("faces", faces));
 	}
 }; 
+
 
 
 openMVG::features::SIFT_Regions::DescriptorT getRandDescripBaesOnIdx(const int& descriptorLength, const int&  i)
@@ -340,6 +432,8 @@ openMVG::features::SIFT_Regions::DescriptorT getRandDescripBaesOnIdx(const int& 
 	for (int i = 0; i < descriptorLength; i++) randDescrip[i] = rand() % 256;
 	return randDescrip;
 }
+
+
 int replaceFeature(const std::string& landmarksRoot, const std::string& sfmJsonPath)
 { 
 	std::unique_ptr<openMVG::features::SIFT_Regions> regions_ptr(new openMVG::features::SIFT_Regions());
@@ -398,13 +492,85 @@ int replaceFeature(const std::string& landmarksRoot, const std::string& sfmJsonP
 			std::cout << "  2 " << iter->second->s_Img_path << std::endl;
 			continue;
 		}
+
+		std::vector<bool>isCoveredLandmark(data.frontLandmarks2d.size(), false);
 		if (landmarkCnt<0)
 		{
-			landmarkCnt = data.landmarks.size();
+			landmarkCnt = data.frontLandmarks2d.size();
+			std::map<int, std::list<int>>ptBelongToFaces;
+			for (int f = 0; f < data.faces.size(); f++)
+			{
+				const int& pa = data.faces[f][0];
+				const int& pb = data.faces[f][1];
+				const int& pc = data.faces[f][2];
+				ptBelongToFaces[pa].emplace_back(f);
+				ptBelongToFaces[pb].emplace_back(f);
+				ptBelongToFaces[pc].emplace_back(f);
+			}
+#pragma omp parallel for
+			for (int i = 0; i < data.dirs.size(); i++)
+			{
+				if (data.frontLandmarks2dNorm[i][0] < 0.1 || data.frontLandmarks2dNorm[i][0] >0.9
+					|| data.frontLandmarks2dNorm[i][1] < 0.1 || data.frontLandmarks2dNorm[i][1]>0.9)
+				{
+					isCoveredLandmark[i] = true;
+				}
+			}
+#pragma omp parallel for
+			for (int i = 0; i < data.dirs.size(); i++)
+			{
+				if (isCoveredLandmark[i])continue;
+				int temp = data.dirs.size() * i;
+				for (int f = 0; f < data.faces.size(); f++)
+				{
+					const int& pa = data.faces[f][0];
+					const int& pb = data.faces[f][1];
+					const int& pc = data.faces[f][2];
+	/*				const double& paCos = dirDirCos[temp+pa];
+					const double& pbCos = dirDirCos[temp+pb];
+					const double& pcCos = dirDirCos[temp+pc];
+					if (paCos < threCos&& pbCos < threCos&& pcCos < threCos)
+					{
+						continue;
+					}*/
+					double t, v, u;
+					 
+					double original[3] = { data.frontLandmarks3d[i][0], data.frontLandmarks3d[i][1] , data.frontLandmarks3d[i][2]-3 };
+					double parallelDir[3] = {0.,0,1};
+					int hit = intersect_triangle1<double>(original, parallelDir, &data.frontLandmarks3d[pa][0], &data.frontLandmarks3d[pb][0], &data.frontLandmarks3d[pc][0], &t, &u, &v);
+					if (hit )
+					{
+						bool isOtherFace = (ptBelongToFaces[i].end() == std::find(ptBelongToFaces[i].begin(), ptBelongToFaces[i].end(), f));
+						if (isOtherFace)
+						{
+							isCoveredLandmark[i] = true;
+							break;
+						}
+					} 
+				} 
+			}
+
+			std::string objPath = stlplus::create_filespec(landmarksRoot, imgName, "obj");
+			std::fstream fout(objPath, std::ios::out);
+			for (size_t i = 0; i < data.frontLandmarks3d.size(); i++)
+			{
+				fout << "v " << data.frontLandmarks3d[i][0] << " " << data.frontLandmarks3d[i][1] << " " << data.frontLandmarks3d[i][2] << std::endl;
+			}
+			for (size_t f = 0; f < data.faces.size(); f++)
+			{
+				const int& pa = data.faces[f][0];
+				const int& pb = data.faces[f][1];
+				const int& pc = data.faces[f][2];
+				if (isCoveredLandmark[pa] || isCoveredLandmark[pb] || isCoveredLandmark[pc] )
+				{
+					continue;
+				}
+				fout << "f " << pa + 1 << " " << pb + 1 << " " << pc + 1 << std::endl;
+			}
 		}
 		else
 		{
-			if (landmarkCnt != data.landmarks.size())
+			if (landmarkCnt != data.frontLandmarks2d.size())
 			{
 				std::cout <<"  !!!  " << std::endl;
 			}
@@ -416,15 +582,15 @@ int replaceFeature(const std::string& landmarksRoot, const std::string& sfmJsonP
 		//image_describer->Load(regions_ptr.get(), thisFeaturePath, thisDescripPath);
 		regions_ptr.get()->Features().clear();
 		regions_ptr.get()->Descriptors().clear();
-		for (int i = 0; i < data.landmarks.size(); i++)
+		for (int i = 0; i < data.frontLandmarks2d.size(); i++)
 		{
 			openMVG::features::SIFT_Regions::FeatureT thisFeat;
-			if (data.landmarks[i][0]<0)
+			if (data.frontLandmarks2d[i][0]<0)
 			{
 				continue;
 			}
-			thisFeat.x() = data.landmarks[i][0];
-			thisFeat.y() = data.landmarks[i][1]; 
+			thisFeat.x() = data.frontLandmarks2d[i][0];
+			thisFeat.y() = data.frontLandmarks2d[i][1]; 
 			
 			regions_ptr.get()->Features().emplace_back(thisFeat);
 			regions_ptr.get()->Descriptors().emplace_back(getRandDescripBaesOnIdx(descriptorLength,i)); 

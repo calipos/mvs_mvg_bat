@@ -123,7 +123,7 @@ def landmark2d(img,detection_result):
     face_landmarks_list = detection_result.face_landmarks
     if len(face_landmarks_list)!=1:
         print("len(face_landmarks_list)!=1")
-        return None,None,None
+        return None,None,None,None,None
     face_landmarks = face_landmarks_list[0]
     landmark3dList=np.zeros((len(face_landmarks), 3)) 
     for i in range(len(face_landmarks)):
@@ -134,7 +134,8 @@ def landmark2d(img,detection_result):
     landmark2dNorm = landmark3dList[:,0:2]
     xy=np.array([[img.shape[1]-1,img.shape[0]-1]])
     landmark2d=landmark2dNorm*xy
-    return ndArrayToList(landmark2d),ndArrayToList(landmark2dNorm),ndArrayToList(dir)
+    return ndArrayToList(landmark2d),ndArrayToList(landmark2dNorm),ndArrayToList(landmark3dList),ndArrayToList(dir),constFaces
+    
     data=[]
     for i in range(landmark2d.shape[0]):
         if hits[i]>1:data.append((-1,-1))
@@ -248,9 +249,9 @@ def detectSigleAndSave(imgsRoot,jsonRoot,imgName,index_):
     detection_result = detector.detect(image)
     #annotated_image = draw_landmarks_on_image(image.numpy_view(), detection_result)
     #annotated_image = cv2.cvtColor(annotated_image,  cv2.COLOR_BGR2RGB)
-    frontLandmarks,frontLandmarksNorm,dirs = landmark2d(image.numpy_view(),detection_result)  
-    if not frontLandmarks is None:            
-        data = {'landMarks':frontLandmarks,'frontLandmarksNorm':frontLandmarksNorm,'dirs':dirs,'faces':constFaces}
+    frontLandmarks2d,frontLandmarks2dNorm,frontLandmarks3d,frontLandmarks3dNorm,faces = landmark2d(image.numpy_view(),detection_result)  
+    if not frontLandmarks2d is None:            
+        data = {'frontLandmarks2d':frontLandmarks2d,'frontLandmarks2dNorm':frontLandmarks2dNorm,'frontLandmarks3d':frontLandmarks3d,'frontLandmarks3dNorm':frontLandmarks3dNorm,'faces':faces}
         with open(jsonPath, 'w') as f:
             json.dump(data, f)
 def findAllFile(base):
