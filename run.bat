@@ -3,6 +3,7 @@ set piciturePath=D:\repo\mvs_mvg_bat\viewer
 set workSpace=D:\repo\mvs_mvg_bat\viewerout
 set workSfmSpace=D:\repo\mvs_mvg_bat\viewerout\sfm
 set workMvsSpace=D:\repo\mvs_mvg_bat\viewerout\mvs
+set workColmapSpace=D:\repo\mvs_mvg_bat\viewerout\colmap
 set workLmsSpace=D:\repo\mvs_mvg_bat\viewerout\landmarks
 set openMvgPath=D:\repo\openMVG\src\build-2019\installRelease\bin
 echo %piciturePath%
@@ -16,9 +17,10 @@ mkdir %workSpace%
 mkdir %workSfmSpace% 
 mkdir %workLmsSpace% 
 mkdir %workMvsSpace% 
+mkdir %workColmapSpace% 
 
 echo "-1. prepare images"
-python.exe .\mp42jpg.py  %piciturePath%\10.mp4  12
+python.exe .\mp42jpg.py  %piciturePath%\10.mp4  2
 
 :: parameter support: ALL FACEOUTLINE LEFTEYEBROW RIGHTEYEBROW NOSEBRIDGE NOSTRIL LEFTEYE RIGHTEYE MOUTH
 ::bin\DlibLandmark.exe  %piciturePath% %workLmsSpace% FACEOUTLINE LEFTEYEBROW RIGHTEYEBROW NOSEBRIDGE LEFTEYE RIGHTEYE MOUTH 
@@ -34,17 +36,14 @@ echo "0. Intrinsics analysis"
  
 echo "1. Compute features"
 %openMvgPath%\openMVG_main_ComputeFeatures -i %workSfmSpace%\matches\sfm_data.json -o %workSfmSpace%\matches -m SIFT   -p NORMAL
-exit
+
 echo "1.5  replace facial features"
 bin\ReplaceOpenMvgFeature.exe  %workLmsSpace%  %workSfmSpace%\matches\sfm_data.json
- 
-::xcopy /y   %workSfmSpace%\matches\sfm_data.json.json %workSfmSpace%\matches\sfm_data.json
- 
+  
 
 echo "2. Compute pairs"
 %openMvgPath%\openMVG_main_PairGenerator -i %workSfmSpace%\matches\sfm_data.json -o %workSfmSpace%\matches\pairs.txt
-::python.exe .\gener_new_pair.py  %workSfmSpace%\matches\sfm_data.json  %workSfmSpace%\matches\pairs.txt
-
+ 
 
 echo "3. Compute matches"
 %openMvgPath%\openMVG_main_ComputeMatches -i %workSfmSpace%\matches\sfm_data.json -p %workSfmSpace%\matches\pairs.txt -o %workSfmSpace%\matches\matches.putative.bin -n ANNL2
@@ -68,8 +67,14 @@ echo "6. Incremental reconstruction(GLOBAL)  (INCREMENTAL)"
 
 echo "7. Export to openMVS"
 echo %openMvgPath%\openMVG_main_openMVG2openMVS -i %workSfmSpace%\sfm_data.bin -o %workMvsSpace%\scene.mvs -d %workMvsSpace%\images   
-:: %openMvgPath%\openMVG_main_openMVG2openMVS -i %workSfmSpace%\sfm_data.bin -o %workMvsSpace%\scene.mvs -d %workMvsSpace%\images   
+%openMvgPath%\openMVG_main_openMVG2openMVS -i %workSfmSpace%\sfm_data.bin -o %workMvsSpace%\scene.mvs -d %workMvsSpace%\images   
 
+echo "7. Export to colmap"
+echo %openMvgPath%\openMVG_main_openMVG2Colmap -i %workSfmSpace%\sfm_data.bin -o %workColmapSpace%
+%openMvgPath%\openMVG_main_openMVG2Colmap -i %workSfmSpace%\sfm_data.bin -o %workColmapSpace%
+
+
+exit
  
 ::run2.bat
 ::pause

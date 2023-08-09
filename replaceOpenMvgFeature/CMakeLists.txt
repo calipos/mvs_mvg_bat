@@ -5,7 +5,7 @@ project (ReplaceOpenMvgFeature)
 set(openMvgInstall D:/repo/openMVG/src/build-2019/install)
 
 
-add_executable(ReplaceOpenMvgFeature insertNewMatchMain.cpp)
+add_executable(ReplaceOpenMvgFeature insertNewMatchMain.cpp mesh.cpp) 
 
 add_definitions(-DNOMINMAX  -D_USE_MATH_DEFINES  -DOPENMVG_USE_AVX2 -DOPENMVG_USE_AVX -DOPENMVG_USE_OPENMP -DEIGEN_MPL2_ONLY -DUSE_PATENTED_LIGT -DLEMON_ONLY_TEMPLATES)
 

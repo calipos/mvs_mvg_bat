@@ -123,18 +123,15 @@ def landmark2d(img,detection_result):
     face_landmarks_list = detection_result.face_landmarks
     if len(face_landmarks_list)!=1:
         print("len(face_landmarks_list)!=1")
-        return None,None,None,None,None
+        return None,None
     face_landmarks = face_landmarks_list[0]
     landmark3dList=np.zeros((len(face_landmarks), 3)) 
     for i in range(len(face_landmarks)):
         landmark3dList[i]=[face_landmarks[i].x, face_landmarks[i].y, face_landmarks[i].z] 
-    norm=np.linalg.norm(landmark3dList, ord=2,axis=1)
-    dir = landmark3dList/norm.reshape((-1,1))    
-    hits = rays_mesh_intersect2([0,0,0],dir,landmark3dList,constFaces)      
-    landmark2dNorm = landmark3dList[:,0:2]
-    xy=np.array([[img.shape[1]-1,img.shape[0]-1]])
-    landmark2d=landmark2dNorm*xy
-    return ndArrayToList(landmark2d),ndArrayToList(landmark2dNorm),ndArrayToList(landmark3dList),ndArrayToList(dir),constFaces
+ 
+    xyz=np.array([[img.shape[1],img.shape[0],img.shape[1]]])
+    landmark3d=landmark3dList*xyz
+    return ndArrayToList(landmark3d),constFaces
     
     data=[]
     for i in range(landmark2d.shape[0]):
@@ -238,22 +235,23 @@ def detectSigle():
 
 
 def detectSigleAndSave(imgsRoot,jsonRoot,imgName,index_):
-    print(index_)
     imgPath = os.path.join(imgsRoot,imgName)
     if not imgPath.endswith('.jpg'):
         return
     jsonPath = os.path.join(jsonRoot,imgName)+'.json'
     showPath = os.path.join(jsonRoot,imgName)+'.jpg'
-    print(imgPath,index_,'/',len(imgNames))
-    image = mp.Image.create_from_file(imgPath)
+    image = mp.Image.create_from_file(imgPath) 
     detection_result = detector.detect(image)
     #annotated_image = draw_landmarks_on_image(image.numpy_view(), detection_result)
     #annotated_image = cv2.cvtColor(annotated_image,  cv2.COLOR_BGR2RGB)
-    frontLandmarks2d,frontLandmarks2dNorm,frontLandmarks3d,frontLandmarks3dNorm,faces = landmark2d(image.numpy_view(),detection_result)  
-    if not frontLandmarks2d is None:            
-        data = {'frontLandmarks2d':frontLandmarks2d,'frontLandmarks2dNorm':frontLandmarks2dNorm,'frontLandmarks3d':frontLandmarks3d,'frontLandmarks3dNorm':frontLandmarks3dNorm,'faces':faces}
+    frontLandmarks3d,faces = landmark2d(image.numpy_view(),detection_result)  
+    if not frontLandmarks3d is None:                
+        print(imgPath,index_,'/',len(imgNames),' (',len(frontLandmarks3d))
+        data = {'imgHeight':image.height,'imgWidth':image.width,'frontLandmarks3d':frontLandmarks3d,'faces':faces}
         with open(jsonPath, 'w') as f:
             json.dump(data, f)
+    else:
+        print(imgPath,index_,'/',len(imgNames),' (0')
 def findAllFile(base):
     for root, ds, fs in os.walk(base):
         return (fs)

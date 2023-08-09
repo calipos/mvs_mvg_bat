@@ -69,6 +69,7 @@
 #include <map>
 #include <array>
 #include <string>
+#include "mesh.h"
 #include "omp.h"
 
 #define IGL_RAY_TRI_EPSILON 0.000000001
@@ -407,18 +408,16 @@ bool StringToEnum(	const std::string& str,	ESfMSceneInitializer& scene_initializ
 }
 struct Landmarks
 {
-	std::vector<std::vector<double>>frontLandmarks2d;
-	std::vector<std::vector<double>>frontLandmarks2dNorm;
+	int imgHeight;
+	int imgWidth;
 	std::vector<std::vector<double>>frontLandmarks3d;
-	std::vector<std::vector<double>>dirs;
 	std::vector<std::vector<int>>faces;
 	template <class Archive>
 	void serialize(Archive& ar)
 	{
-		ar(cereal::make_nvp("frontLandmarks2d", frontLandmarks2d));
-		ar(cereal::make_nvp("frontLandmarks2dNorm", frontLandmarks2dNorm));
+		ar(cereal::make_nvp("imgHeight", imgHeight));
+		ar(cereal::make_nvp("imgWidth", imgWidth));
 		ar(cereal::make_nvp("frontLandmarks3d", frontLandmarks3d));
-		ar(cereal::make_nvp("frontLandmarks3dNorm", dirs));
 		ar(cereal::make_nvp("faces", faces));
 	}
 }; 
@@ -434,6 +433,10 @@ openMVG::features::SIFT_Regions::DescriptorT getRandDescripBaesOnIdx(const int& 
 }
 
 
+
+
+void reOrientFaces(Eigen::MatrixXf& pts, Eigen::MatrixXi& faces )
+{}
 int replaceFeature(const std::string& landmarksRoot, const std::string& sfmJsonPath)
 { 
 	std::unique_ptr<openMVG::features::SIFT_Regions> regions_ptr(new openMVG::features::SIFT_Regions());
@@ -493,52 +496,61 @@ int replaceFeature(const std::string& landmarksRoot, const std::string& sfmJsonP
 			continue;
 		}
 
-		std::vector<bool>isCoveredLandmark(data.frontLandmarks2d.size(), false);
+		std::vector<bool>isCoveredLandmark(data.frontLandmarks3d.size(), false);
+		Eigen::MatrixXf pts;
+		Eigen::MatrixXi faces;
 		if (landmarkCnt<0)
 		{
-			landmarkCnt = data.frontLandmarks2d.size();
-			std::map<int, std::list<int>>ptBelongToFaces;
-			for (int f = 0; f < data.faces.size(); f++)
+			landmarkCnt = data.frontLandmarks3d.size();			
+		}
+		else
+		{
+			if (landmarkCnt != data.frontLandmarks3d.size())
 			{
-				const int& pa = data.faces[f][0];
-				const int& pb = data.faces[f][1];
-				const int& pc = data.faces[f][2];
+				std::cout <<"  !!!  " << std::endl;
+			}
+		} 
+		{
+			pts = vector3ToEigen<float, double>(data.frontLandmarks3d);
+			faces = vector3ToEigen<int, int>(data.faces);
+			mesh::reorderFaces(faces);
+			std::map<int, std::list<int>>ptBelongToFaces;
+			for (int f = 0; f < faces.rows(); f++)
+			{
+				const int& pa = faces(f, 0);
+				const int& pb = faces(f, 1);
+				const int& pc = faces(f, 2);
 				ptBelongToFaces[pa].emplace_back(f);
 				ptBelongToFaces[pb].emplace_back(f);
 				ptBelongToFaces[pc].emplace_back(f);
 			}
 #pragma omp parallel for
-			for (int i = 0; i < data.dirs.size(); i++)
+			for (int i = 0; i < pts.rows(); i++)
 			{
-				if (data.frontLandmarks2dNorm[i][0] < 0.1 || data.frontLandmarks2dNorm[i][0] >0.9
-					|| data.frontLandmarks2dNorm[i][1] < 0.1 || data.frontLandmarks2dNorm[i][1]>0.9)
+				if (pts(i, 0) < 0.1 * data.imgWidth || pts(i, 0) > 0.9 * data.imgWidth
+					|| pts(i, 1) < 0.1 * data.imgHeight || pts(i, 1) > 0.9 * data.imgHeight)
 				{
 					isCoveredLandmark[i] = true;
 				}
 			}
 #pragma omp parallel for
-			for (int i = 0; i < data.dirs.size(); i++)
+			for (int i = 0; i < pts.rows(); i++)
 			{
 				if (isCoveredLandmark[i])continue;
-				int temp = data.dirs.size() * i;
-				for (int f = 0; f < data.faces.size(); f++)
+				for (int f = 0; f < faces.rows(); f++)
 				{
-					const int& pa = data.faces[f][0];
-					const int& pb = data.faces[f][1];
-					const int& pc = data.faces[f][2];
-	/*				const double& paCos = dirDirCos[temp+pa];
-					const double& pbCos = dirDirCos[temp+pb];
-					const double& pcCos = dirDirCos[temp+pc];
-					if (paCos < threCos&& pbCos < threCos&& pcCos < threCos)
-					{
-						continue;
-					}*/
-					double t, v, u;
-					 
-					double original[3] = { data.frontLandmarks3d[i][0], data.frontLandmarks3d[i][1] , data.frontLandmarks3d[i][2]-3 };
-					double parallelDir[3] = {0.,0,1};
-					int hit = intersect_triangle1<double>(original, parallelDir, &data.frontLandmarks3d[pa][0], &data.frontLandmarks3d[pb][0], &data.frontLandmarks3d[pc][0], &t, &u, &v);
-					if (hit )
+					const int& pa = faces(f, 0);
+					const int& pb = faces(f, 1);
+					const int& pc = faces(f, 2);
+					float t, v, u;
+
+					float original[3] = { pts(i, 0), pts(i, 1) , pts(i,2) - 3 };
+					float parallelDir[3] = { 0.,0,1 };
+					float p1[3] = { pts(pa, 0), pts(pa, 1) , pts(pa,2) };
+					float p2[3] = { pts(pb, 0), pts(pb, 1) , pts(pb,2) };
+					float p3[3] = { pts(pc, 0), pts(pc, 1) , pts(pc,2) };
+					int hit = intersect_triangle1<float>(original, parallelDir, p1, p2, p3, &t, &u, &v);
+					if (hit)
 					{
 						bool isOtherFace = (ptBelongToFaces[i].end() == std::find(ptBelongToFaces[i].begin(), ptBelongToFaces[i].end(), f));
 						if (isOtherFace)
@@ -546,35 +558,27 @@ int replaceFeature(const std::string& landmarksRoot, const std::string& sfmJsonP
 							isCoveredLandmark[i] = true;
 							break;
 						}
-					} 
-				} 
+					}
+				}
 			}
-
 			std::string objPath = stlplus::create_filespec(landmarksRoot, imgName, "obj");
 			std::fstream fout(objPath, std::ios::out);
-			for (size_t i = 0; i < data.frontLandmarks3d.size(); i++)
+			for (size_t i = 0; i < pts.rows(); i++)
 			{
-				fout << "v " << data.frontLandmarks3d[i][0] << " " << data.frontLandmarks3d[i][1] << " " << data.frontLandmarks3d[i][2] << std::endl;
+				fout << "v " << pts(i, 0) << " " << pts(i, 1) << " " << pts(i, 2) << std::endl;
 			}
-			for (size_t f = 0; f < data.faces.size(); f++)
+			for (size_t f = 0; f < faces.rows(); f++)
 			{
-				const int& pa = data.faces[f][0];
-				const int& pb = data.faces[f][1];
-				const int& pc = data.faces[f][2];
-				if (isCoveredLandmark[pa] || isCoveredLandmark[pb] || isCoveredLandmark[pc] )
+				const int& pa = faces(f, 0);
+				const int& pb = faces(f, 1);
+				const int& pc = faces(f, 2);
+				if (isCoveredLandmark[pa] || isCoveredLandmark[pb] || isCoveredLandmark[pc])
 				{
 					continue;
 				}
 				fout << "f " << pa + 1 << " " << pb + 1 << " " << pc + 1 << std::endl;
 			}
 		}
-		else
-		{
-			if (landmarkCnt != data.frontLandmarks2d.size())
-			{
-				std::cout <<"  !!!  " << std::endl;
-			}
-		} 
 		std::string extension = stlplus::extension_part(imgName);
 		std::string stem = imgName.substr(0, imgName.length() - extension.length() - 1);
 		std::string thisFeaturePath = stlplus::create_filespec(featureRoot, stem, "feat"); 
@@ -582,31 +586,28 @@ int replaceFeature(const std::string& landmarksRoot, const std::string& sfmJsonP
 		//image_describer->Load(regions_ptr.get(), thisFeaturePath, thisDescripPath);
 		regions_ptr.get()->Features().clear();
 		regions_ptr.get()->Descriptors().clear();
-		for (int i = 0; i < data.frontLandmarks2d.size(); i++)
+		int validCnt = 0;
+		for (int i = 0; i < data.frontLandmarks3d.size(); i++)
 		{
 			openMVG::features::SIFT_Regions::FeatureT thisFeat;
-			if (data.frontLandmarks2d[i][0]<0)
+			if (isCoveredLandmark[i])
 			{
 				continue;
 			}
-			thisFeat.x() = data.frontLandmarks2d[i][0];
-			thisFeat.y() = data.frontLandmarks2d[i][1]; 
+			thisFeat.x() = data.frontLandmarks3d[i][0];
+			thisFeat.y() = data.frontLandmarks3d[i][1]; 
 			
 			regions_ptr.get()->Features().emplace_back(thisFeat);
 			regions_ptr.get()->Descriptors().emplace_back(getRandDescripBaesOnIdx(descriptorLength,i)); 
+			validCnt++;
 		} 
-		std::cout << "thisFeaturePath : " << thisFeaturePath << " : "<< regions_ptr.get()->Features().size() <<std::endl;
-		std::cout << "thisDescripPath : " << thisDescripPath << " : "<< regions_ptr.get()->Descriptors().size() <<std::endl;
+		std::cout << "thisFeaturePath : " << thisFeaturePath << " : "<< regions_ptr.get()->Features().size() << std::endl;
+		std::cout << "thisDescripPath : " << thisDescripPath << " : "<< regions_ptr.get()->Descriptors().size()<<std::endl;
 		image_describer->Save(regions_ptr.get(), thisFeaturePath, thisDescripPath);
 		iter++;
 	}
 
 	if (!openMVG::sfm::Save(sfm_data, sfmJsonPath, openMVG::sfm::ESfM_Data(openMVG::sfm::ALL)))
-	{
-		OPENMVG_LOG_ERROR << "The input SfM_Data file \"" << sfmJsonPath << "\" cannot be write.";
-		return EXIT_FAILURE;
-	}
-	if (!openMVG::sfm::Save(sfm_data, sfmJsonPath+".json", openMVG::sfm::ESfM_Data(openMVG::sfm::ALL)))
 	{
 		OPENMVG_LOG_ERROR << "The input SfM_Data file \"" << sfmJsonPath << "\" cannot be write.";
 		return EXIT_FAILURE;
