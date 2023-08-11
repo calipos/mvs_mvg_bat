@@ -250,6 +250,9 @@ def detectSigleAndSave(imgsRoot,jsonRoot,imgName,index_):
         data = {'imgHeight':image.height,'imgWidth':image.width,'frontLandmarks3d':frontLandmarks3d,'faces':faces}
         with open(jsonPath, 'w') as f:
             json.dump(data, f)
+        annotated_image = draw_landmarks_on_image(image.numpy_view(), detection_result)
+        annotated_image = cv2.cvtColor(annotated_image,  cv2.COLOR_BGR2RGB)
+        cv2.imwrite(showPath, annotated_image)
     else:
         print(imgPath,index_,'/',len(imgNames),' (0')
 def findAllFile(base):

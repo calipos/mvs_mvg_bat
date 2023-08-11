@@ -422,13 +422,16 @@ struct Landmarks
 	}
 }; 
 
-
+static std::vector<int> randData;
 
 openMVG::features::SIFT_Regions::DescriptorT getRandDescripBaesOnIdx(const int& descriptorLength, const int&  i)
 {	 
-	srand(i);
+	while (randData.size() < i + descriptorLength)
+	{
+		randData.emplace_back(rand() % 256);
+	}
 	openMVG::features::SIFT_Regions::DescriptorT randDescrip;
-	for (int i = 0; i < descriptorLength; i++) randDescrip[i] = rand() % 256;
+	for (int ii = 0; ii < descriptorLength; ii++) randDescrip[i] = randData[i + ii];
 	return randDescrip;
 }
 
