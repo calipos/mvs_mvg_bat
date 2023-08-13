@@ -6,14 +6,9 @@ project (test)
 #SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)			# 设置库文件的输出目录
 
 #include_directories (${PROJECT_SOURCE_DIR}/inc)				# 附加头文件目录
-option(BUILD_DEBUG "option for debug" OFF)
 option(BUILD_SHARED_LIBS "option for shared" OFF)
 set (CMAKE_BUILD_TYPE "Debug")
-if (BUILD_DEBUG)
-set (CMAKE_BUILD_TYPE "Debug") #Release  Debug
-ELSE()
-set (CMAKE_BUILD_TYPE "Release") #Release  Debug
-endif()
+
 set(thirdPart D:/ucl360/libraries2019) 
 ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/DlibLandmark)				# 先执行这个目录下的cmake
 ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/replaceOpenMvgFeature)					# 上个目录下生成库后，此时再链接生成可执行文件

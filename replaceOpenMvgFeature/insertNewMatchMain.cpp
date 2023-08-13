@@ -431,7 +431,7 @@ openMVG::features::SIFT_Regions::DescriptorT getRandDescripBaesOnIdx(const int& 
 		randData.emplace_back(rand() % 256);
 	}
 	openMVG::features::SIFT_Regions::DescriptorT randDescrip;
-	for (int ii = 0; ii < descriptorLength; ii++) randDescrip[i] = randData[i + ii];
+	for (int ii = 0; ii < descriptorLength; ii++) randDescrip[ii] = randData[i + ii];
 	return randDescrip;
 }
 
@@ -455,12 +455,15 @@ int replaceFeature(const std::string& landmarksRoot, const std::string& sfmJsonP
 	//	return EXIT_FAILURE;
 	//}
 	openMVG::sfm::SfM_Data sfm_data;
+	openMVG::sfm::Load(sfm_data, sfmJsonPath, openMVG::sfm::ESfM_Data(openMVG::sfm::ALL)); return 0;
 	if (!openMVG::sfm::Load(sfm_data, sfmJsonPath, openMVG::sfm::ESfM_Data(openMVG::sfm::ALL)))
 	{
 		OPENMVG_LOG_ERROR << "The input SfM_Data file \"" << sfmJsonPath << "\" cannot be read.";
 		return EXIT_FAILURE;
 	}
 	int landmarkCnt = -1;
+	
+	
 	auto iter = sfm_data.views.begin();
 	while (  iter!= sfm_data.views.end())
 	{   
@@ -498,7 +501,11 @@ int replaceFeature(const std::string& landmarksRoot, const std::string& sfmJsonP
 			std::cout << "  2 " << iter->second->s_Img_path << std::endl;
 			continue;
 		}
-
+		if (data.frontLandmarks3d.size()==0)
+		{
+			sfm_data.views.erase(iter++);
+			continue;
+		}
 		std::vector<bool>isCoveredLandmark(data.frontLandmarks3d.size(), false);
 		Eigen::MatrixXf pts;
 		Eigen::MatrixXi faces;
@@ -601,9 +608,10 @@ int replaceFeature(const std::string& landmarksRoot, const std::string& sfmJsonP
 			thisFeat.y() = data.frontLandmarks3d[i][1]; 
 			
 			regions_ptr.get()->Features().emplace_back(thisFeat);
+			
 			regions_ptr.get()->Descriptors().emplace_back(getRandDescripBaesOnIdx(descriptorLength,i)); 
 			validCnt++;
-		} 
+		}  
 		std::cout << "thisFeaturePath : " << thisFeaturePath << " : "<< regions_ptr.get()->Features().size() << std::endl;
 		std::cout << "thisDescripPath : " << thisDescripPath << " : "<< regions_ptr.get()->Descriptors().size()<<std::endl;
 		image_describer->Save(regions_ptr.get(), thisFeaturePath, thisDescripPath);
@@ -615,6 +623,7 @@ int replaceFeature(const std::string& landmarksRoot, const std::string& sfmJsonP
 		OPENMVG_LOG_ERROR << "The input SfM_Data file \"" << sfmJsonPath << "\" cannot be write.";
 		return EXIT_FAILURE;
 	}
+	std::cout << "end" << std::endl;
 	return 0;
 }
 
