@@ -180,7 +180,8 @@ int generateFeature(int argc, char** argv)
 	std::unique_ptr<openMVG::features::Regions> regions_type = openMVG::features::Init_region_type_from_file(sImage_describer);
 	std::map<openMVG::IndexT, std::vector<openMVG::IndexT>> imgFeatureIdx;
 	std::vector<int> imgIdx;
-	imgIdx.reserve(sfm_data.views.size());
+	imgIdx.reserve(sfm_data.views.size()); 
+	std::vector<std::map<openMVG::IndexT, int>> featureIdxs(sfm_data.views.size());
 	{
 		openMVG::system::Timer timer;
 		openMVG::image::Image<unsigned char> imageGray;
@@ -322,18 +323,21 @@ int generateFeature(int argc, char** argv)
 			imgFeatureIdx[view->id_view] = std::vector<openMVG::IndexT>();
 			imgFeatureIdx[view->id_view].reserve(512);
 			imgIdx.emplace_back(view->id_view);
+			featureIdxs[view->id_view];
 			for (openMVG::IndexT landmarkIdx = 0; landmarkIdx < data.frontLandmarks3d.size(); landmarkIdx++)
 			{
 				openMVG::features::SIFT_Regions::FeatureT thisFeat;
 				if (isCoveredLandmark[landmarkIdx])
 				{
+					featureIdxs[view->id_view][landmarkIdx] = -1;
 					continue;
 				}
 				thisFeat.x() = data.frontLandmarks3d[landmarkIdx][0];
 				thisFeat.y() = data.frontLandmarks3d[landmarkIdx][1];
 				regions_ptr.get()->Features().emplace_back(thisFeat);
 				regions_ptr.get()->Descriptors().emplace_back(getRandDescripBaesOnIdx(descriptorLength, landmarkIdx));
-				imgFeatureIdx[view->id_view].emplace_back(landmarkIdx);
+				imgFeatureIdx[view->id_view].emplace_back(landmarkIdx); 
+				featureIdxs[view->id_view][landmarkIdx] = validCnt;
 				validCnt++;
 			}
 			//std::cout << "thisFeaturePath : " << sFeat << " : " << regions_ptr.get()->Features().size() << std::endl;
@@ -374,11 +378,12 @@ int generateFeature(int argc, char** argv)
 			openMVG::Pair currentPair(i,j);
 			openMVG::matching::IndMatches currentMatch;
 			for (openMVG::IndexT k = 0; k < imgFeatureIdx[i].size(); k++)
-			{
-				if (imgFeatureIdx[j].end() !=std::find(imgFeatureIdx[j].begin(), imgFeatureIdx[j].end(), imgFeatureIdx[i][k]))
-				{ 
-					currentMatch.emplace_back(openMVG::matching::IndMatch(imgFeatureIdx[i][k], imgFeatureIdx[i][k]));
+			{				
+				if (featureIdxs[i][k]>=0 && featureIdxs[j][k] >= 0)
+				{
+					currentMatch.emplace_back(openMVG::matching::IndMatch(featureIdxs[i][k], featureIdxs[j][k]));
 				}
+				
 			}
 			if (currentMatch.size()>10)
 			{

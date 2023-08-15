@@ -45,7 +45,7 @@ echo "2. Compute pairs"
 
 echo "3. Compute matches"
 ::%openMvgPath%\openMVG_main_ComputeMatches -i %workSfmSpace%\matches\sfm_data.json -p %workSfmSpace%\matches\pairs.txt -o %workSfmSpace%\matches\matches.putative.bin -n ANNL2  
-exit
+
 echo "4. Filter matches"
 ::%openMvgPath%\openMVG_main_GeometricFilter -i %workSfmSpace%\matches\sfm_data.json -m %workSfmSpace%\matches\matches.putative.bin -o %workSfmSpace%\matches\matches.f.bin  -g f
 %openMvgPath%\openMVG_main_GeometricFilter -i %workSfmSpace%\matches\sfm_data.json -m %workSfmSpace%\matches\matches.putative.bin -o %workSfmSpace%\matches\matches.fe.bin  -g e
