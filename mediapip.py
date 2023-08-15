@@ -122,7 +122,7 @@ def ndArrayToList(data):
 def landmark2d(img,detection_result):
     face_landmarks_list = detection_result.face_landmarks
     if len(face_landmarks_list)!=1:
-        print("len(face_landmarks_list)!=1")
+        #print("len(face_landmarks_list)!=1")
         return None,None
     face_landmarks = face_landmarks_list[0]
     landmark3dList=np.zeros((len(face_landmarks), 3)) 

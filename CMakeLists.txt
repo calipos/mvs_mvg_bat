@@ -13,4 +13,5 @@ set(thirdPart D:/ucl360/libraries2019)
 ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/DlibLandmark)				# 先执行这个目录下的cmake
 ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/replaceOpenMvgFeature)					# 上个目录下生成库后，此时再链接生成可执行文件
 ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/denseCloud)				 
+ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/generatePipeMediaFeature)
 SET(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR})

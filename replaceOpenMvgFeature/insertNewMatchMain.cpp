@@ -442,25 +442,34 @@ void reOrientFaces(Eigen::MatrixXf& pts, Eigen::MatrixXi& faces )
 {}
 int replaceFeature(const std::string& landmarksRoot, const std::string& sfmJsonPath)
 { 
+	openMVG::sfm::SfM_Data sfm_data;
+	if (!openMVG::sfm::Load(sfm_data, sfmJsonPath, openMVG::sfm::ESfM_Data(openMVG::sfm::ALL)))
+	{
+		OPENMVG_LOG_ERROR << "The input SfM_Data file \"" << sfmJsonPath << "\" cannot be read.";
+		return EXIT_FAILURE;
+	}
+	const std::string featureRoot = stlplus::folder_part(sfmJsonPath);
+	const std::string sImage_describer = stlplus::create_filespec(featureRoot, "image_describer", "json");
+	std::unique_ptr<openMVG::features::Regions> regions_type = openMVG::features::Init_region_type_from_file(sImage_describer);
+	if (!regions_type)
+	{
+		OPENMVG_LOG_ERROR << "Invalid: " << sImage_describer << " regions type file.";
+		return EXIT_FAILURE;
+	}
+
+
 	std::unique_ptr<openMVG::features::SIFT_Regions> regions_ptr(new openMVG::features::SIFT_Regions());
 	int descriptorLength = regions_ptr->DescriptorLength();
 	std::unique_ptr<openMVG::features::SIFT_Image_describer> image_describer(new openMVG::features::SIFT_Image_describer(openMVG::features::SIFT_Image_describer::Params(), !false));
 
-	const std::string featureRoot = stlplus::folder_part(sfmJsonPath);
-	const std::string sImage_describer = stlplus::create_filespec(featureRoot, "image_describer", "json"); 
+
 	//std::unique_ptr<openMVG::features::Regions> regions_type = openMVG::features::Init_region_type_from_file(sImage_describer);
 	//if (!regions_type)
 	//{
 	//	OPENMVG_LOG_ERROR << "Invalid: " << sImage_describer << " regions type file.";
 	//	return EXIT_FAILURE;
 	//}
-	openMVG::sfm::SfM_Data sfm_data;
-	openMVG::sfm::Load(sfm_data, sfmJsonPath, openMVG::sfm::ESfM_Data(openMVG::sfm::ALL)); return 0;
-	if (!openMVG::sfm::Load(sfm_data, sfmJsonPath, openMVG::sfm::ESfM_Data(openMVG::sfm::ALL)))
-	{
-		OPENMVG_LOG_ERROR << "The input SfM_Data file \"" << sfmJsonPath << "\" cannot be read.";
-		return EXIT_FAILURE;
-	}
+
 	int landmarkCnt = -1;
 	
 	

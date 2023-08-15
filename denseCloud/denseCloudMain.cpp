@@ -144,10 +144,12 @@ struct ImageData
 		t[0] = str2number<dType>(params[5]);
 		t[1] = str2number<dType>(params[6]);
 		t[2] = str2number<dType>(params[7]);
-		//cameraId = str2number<int>(params[8]);
+		cameraId = str2number<int>(params[8]);
 		imgPath = params[9];
 		int ptsCnt = ptsData.size() /3;
 		thisImgPts.resize(ptsCnt);
+
+
 		thisObjPtsIdx.resize(ptsCnt);
 		for (size_t i = 0; i < ptsCnt; i++)
 		{
