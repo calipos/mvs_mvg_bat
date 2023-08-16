@@ -40,15 +40,15 @@ bin\GeneratePipeMediaFeature.exe  %workLmsSpace%  %workSfmSpace%\matches\sfm_dat
 ::echo "1.5  replace facial features"
 ::bin\ReplaceOpenMvgFeature.exe  %workLmsSpace%  %workSfmSpace%\matches\sfm_data.json
 
-echo "2. Compute pairs"
+::echo "2. Compute pairs"
 ::%openMvgPath%\openMVG_main_PairGenerator -i %workSfmSpace%\matches\sfm_data.json -o %workSfmSpace%\matches\pairs.txt 
 
-echo "3. Compute matches"
+::echo "3. Compute matches"
 ::%openMvgPath%\openMVG_main_ComputeMatches -i %workSfmSpace%\matches\sfm_data.json -p %workSfmSpace%\matches\pairs.txt -o %workSfmSpace%\matches\matches.putative.bin -n ANNL2  
 
 echo "4. Filter matches"
 ::%openMvgPath%\openMVG_main_GeometricFilter -i %workSfmSpace%\matches\sfm_data.json -m %workSfmSpace%\matches\matches.putative.bin -o %workSfmSpace%\matches\matches.f.bin  -g f
-%openMvgPath%\openMVG_main_GeometricFilter -i %workSfmSpace%\matches\sfm_data.json -m %workSfmSpace%\matches\matches.putative.bin -o %workSfmSpace%\matches\matches.fe.bin  -g e
+::%openMvgPath%\openMVG_main_GeometricFilter -i %workSfmSpace%\matches\sfm_data.json -m %workSfmSpace%\matches\matches.putative.bin -o %workSfmSpace%\matches\matches.e.bin  -g e
 
 
 

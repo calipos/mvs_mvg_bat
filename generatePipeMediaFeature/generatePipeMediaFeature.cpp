@@ -146,16 +146,29 @@ openMVG::features::SIFT_Image_describer::Regions_type::DescriptorT getRandDescri
 	for (int ii = 0; ii < descriptorLength; ii++) randDescrip[ii] = randData[i + ii];
 	return randDescrip;
 }
-
+int transSfmToJson()
+{
+	openMVG::sfm::SfM_Data sfm_data;
+	if (!Load(sfm_data, "D:/repo/mvs_mvg_bat/viewerout/sfm/sfm_data.bin", openMVG::sfm::ESfM_Data(openMVG::sfm::ALL))) {
+		OPENMVG_LOG_ERROR
+			<< "The input file \"" <<    "\" cannot be read";
+		return EXIT_FAILURE;
+	} 
+	openMVG::sfm::Save(sfm_data,
+		"D:/repo/mvs_mvg_bat/viewerout/sfm/sfm_data.json",
+		openMVG::sfm::ESfM_Data(openMVG::sfm::ALL));
+	return EXIT_SUCCESS;
+}
 int generateFeature(int argc, char** argv)
 {
-	//std::string landmarksRoot = argv[1];
-	//std::string sfmJsonPath  = argv[2];
-	//std::string featureOutdir = argv[3];
-	std::string landmarksRoot = "D:/repo/mvs_mvg_bat/viewerout/landmarks";
-	std::string sfmJsonPath = "D:/repo/mvs_mvg_bat/viewerout/sfm/matches/sfm_data.json";
-	std::string  featureOutdir = "D:/repo/mvs_mvg_bat/viewerout/sfm/matches";
+	std::string landmarksRoot = argv[1];
+	std::string sfmJsonPath  = argv[2];
+	std::string featureOutdir = argv[3];
+	//std::string landmarksRoot = "D:/repo/mvs_mvg_bat/viewerout/landmarks";
+	//std::string sfmJsonPath = "D:/repo/mvs_mvg_bat/viewerout/sfm/matches/sfm_data.json";
+	//std::string  featureOutdir = "D:/repo/mvs_mvg_bat/viewerout/sfm/matches";
 	const std::string sOutputMatchesFilename = stlplus::create_filespec(featureOutdir, "matches.putative.bin");
+	const std::string sOutputMatchesFilename2 = stlplus::create_filespec(featureOutdir, "matches.f.bin");
 	bool bUpRight = false;
 	int iNumThreads = 0; 
 	openMVG::sfm::SfM_Data sfm_data;
@@ -392,6 +405,13 @@ int generateFeature(int argc, char** argv)
 		}
 	}
 	if (!Save(map_PutativeMatches, std::string(sOutputMatchesFilename)))
+	{
+		OPENMVG_LOG_ERROR
+			<< "Cannot save computed matches in: "
+			<< sOutputMatchesFilename;
+		return EXIT_FAILURE;
+	}
+	if (!Save(map_PutativeMatches, std::string(sOutputMatchesFilename2)))
 	{
 		OPENMVG_LOG_ERROR
 			<< "Cannot save computed matches in: "
