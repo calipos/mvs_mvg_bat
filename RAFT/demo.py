@@ -15,7 +15,7 @@ from utils.utils import InputPadder
 from tensorboardX import SummaryWriter  # 用于进行可视化
 from torchviz import make_dot
 
-DEVICE = 'cuda'   #'cuda'  cpu
+DEVICE = 'cpu'   #'cuda'  cpu
 
 def load_image(imfile):
     img = np.array(Image.open(imfile)).astype(np.uint8)
@@ -41,7 +41,7 @@ def viz(img, flo):
 
 def demo(args):
     model = torch.nn.DataParallel(RAFT(args))
-    model.load_state_dict(torch.load(args.model))
+    model.load_state_dict(torch.load(args.model,map_location=torch.device(DEVICE)))
 
     model = model.module
     model.to(DEVICE)
