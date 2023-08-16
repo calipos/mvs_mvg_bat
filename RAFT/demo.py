@@ -70,11 +70,9 @@ def demo(args):
 
             flow_low, flow_up = model(image1, image2, iters=20, test_mode=True)
             file = open("%d.txt"%(saveIdx), "wb") 
-            file.write(flow_up.reshape(-1)) 
+            file.write(flow_up[0].permute(1,2,0).cpu().numpy() .reshape(-1)) 
             file.close()
-            viz(image1, flow_up)            
-            flow_up = flow_up[0].permute(1,2,0).cpu().numpy()
-            print(flow_up.shape)
+            viz(image1, flow_up)      
             
 
 
