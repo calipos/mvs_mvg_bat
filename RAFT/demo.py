@@ -69,18 +69,19 @@ def demo(args):
             image1, image2 = padder.pad(image1, image2)
 
             flow_low, flow_up = model(image1, image2, iters=20, test_mode=True)
+            file = open("%d.txt"%(saveIdx), "wb") 
+            file.write(flow_up.reshape(-1)) 
+            file.close()
             viz(image1, flow_up)            
             flow_up = flow_up[0].permute(1,2,0).cpu().numpy()
             print(flow_up.shape)
-            file = open("example.txt", "wb") 
-            file.write(flow_up.reshape(-1)) 
-            file.close()
+            
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model', help="restore checkpoint",default='./model/raft-things.pth')
-    parser.add_argument('--path', help="dataset for evaluation",default='D:/repo/mvs_mvg_bat/viewer')
+    parser.add_argument('--path', help="dataset for evaluation",default='../viewer')
     parser.add_argument('--small', action='store_true', help='use small model')
     parser.add_argument('--mixed_precision', action='store_true', help='use mixed precision')
     parser.add_argument('--alternate_corr', action='store_true', help='use efficent correlation implementation')
