@@ -15,7 +15,7 @@ from utils.utils import InputPadder
 from tensorboardX import SummaryWriter  # 用于进行可视化
 from torchviz import make_dot
 
-DEVICE = 'cpu'   #'cuda'  cpu
+DEVICE = 'cuda'   #'cuda'  cpu
 
 def load_image(imfile):
     img = np.array(Image.open(imfile)).astype(np.uint8)
@@ -69,7 +69,7 @@ def demo(args):
             image1, image2 = padder.pad(image1, image2)
 
             flow_low, flow_up = model(image1, image2, iters=20, test_mode=True)
-            file = open("%d.txt"%(saveIdx), "wb") 
+            file = open(os.path.split(imfile1)[1]+'-'+os.path.split(imfile2)[1]+'.bin', "wb") 
             file.write(flow_up[0].permute(1,2,0).cpu().numpy() .reshape(-1)) 
             file.close()
             viz(image1, flow_up)      

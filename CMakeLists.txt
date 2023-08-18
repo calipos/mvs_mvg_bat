@@ -7,7 +7,7 @@ project (test)
 
 #include_directories (${PROJECT_SOURCE_DIR}/inc)				# 附加头文件目录
 option(BUILD_SHARED_LIBS "option for shared" OFF)
-set (CMAKE_BUILD_TYPE "Debug")
+
 
 set(thirdPart D:/ucl360/libraries2019) 
 ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/DlibLandmark)				# 先执行这个目录下的cmake
