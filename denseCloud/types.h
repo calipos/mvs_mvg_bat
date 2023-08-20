@@ -46,10 +46,6 @@
 #define FZERO_TOLERANCE	0.0001f
 #define FINV_ZERO		1000000.f
 
-template<typename T>
-constexpr T SQUARE(const T& a) {
-	return a * a;
-}
 
 using dType = double;
 
@@ -81,6 +77,7 @@ struct ImageData
 	int imageId;
 	Eigen::Quaternion<dType>  q;
 	Eigen::Matrix<dType, 3, 1>  t;
+	Eigen::Matrix<dType, 3, 1>  camera_t;
 	cv::Mat worldToCamera;
 	int cameraId;
 	std::string imgPath;
@@ -98,7 +95,7 @@ struct Point3dData
 	cv::Point3_<dType> objPt;
 	cv::Point3_<uchar> objPtRgb;
 	dType error;
-	std::vector<int>tracks;
+	std::map<int,int>tracks_imgId_imgPtId;
 	Point3dData();
 	Point3dData(const std::string& posStr);
 	static std::map<int, Point3dData> readPoint3dData(const std::string& points3DTXT);

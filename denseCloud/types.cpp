@@ -72,6 +72,7 @@ ImageData::ImageData(const std::string& posStr, const std::string& ptsStr)
 	t[1] = str2number<dType>(params[6]);
 	t[2] = str2number<dType>(params[7]);
 	Eigen::Matrix<dType, 4, 4>Rt = Eigen::Matrix<dType, 4, 4>::Identity();
+	camera_t = -q.matrix().transpose() * t;
 	Rt.topLeftCorner<3, 3>() = q.matrix();
 	Rt.topRightCorner<3, 1>() = t;
 	worldToCamera = cv::Mat::eye(3, 4, cv::DataType<dType>::type);
@@ -133,10 +134,12 @@ Point3dData::Point3dData(const std::string& posStr)
 	objPtRgb.y = str2number<uchar>(params[5]);
 	objPtRgb.z = str2number<uchar>(params[6]);
 	error = str2number<dType>(params[7]);
-	tracks.reserve(params.size());
-	for (size_t i = 8; i < params.size(); i++)
+	CHECK(params.size()%2==0);
+	for (size_t i = 8; i < params.size(); i+=2)
 	{
-		tracks.emplace_back(str2number<int>(params[i]));
+		int imgId = str2number<int>(params[i]);
+		int imgPtId = str2number<int>(params[i+1]);
+		tracks_imgId_imgPtId[imgId] = imgPtId;
 	}
 }
 std::map<int, Point3dData> Point3dData::readPoint3dData(const std::string& points3DTXT)

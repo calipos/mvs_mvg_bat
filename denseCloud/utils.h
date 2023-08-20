@@ -14,6 +14,122 @@
 
 
 
+#ifdef _FAST_FLOAT2INT
+// fast float to int conversion
+// (xs routines at stereopsis: http://www.stereopsis.com/sree/fpu2006.html by Sree Kotay)
+const double _float2int_doublemagic = 6755399441055744.0; //2^52 * 1.5, uses limited precision to floor
+const double _float2int_doublemagicdelta = (1.5e-8);
+const double _float2int_doublemagicroundeps = (.5f - _float2int_doublemagicdelta); //almost .5f = .5f - 1e^(number of exp bit)
+FORCEINLINE int CRound2Int(const double& x) {
+	const CastD2I c(x + _float2int_doublemagic);
+	ASSERT(int32_t(floor(x + .5)) == c.i);
+	return c.i;
+}
+#endif
+template <typename INTTYPE = int>
+inline INTTYPE Floor2Int(float x) {
+#ifdef _FAST_FLOAT2INT
+	return CRound2Int(double(x) - _float2int_doublemagicroundeps);
+#else
+	return static_cast<INTTYPE>(floor(x));
+#endif
+}
+template <typename INTTYPE = int>
+inline INTTYPE Floor2Int(double x) {
+#ifdef _FAST_FLOAT2INT
+	return CRound2Int(x - _float2int_doublemagicroundeps);
+#else
+	return static_cast<INTTYPE>(floor(x));
+#endif
+}
+template <typename INTTYPE = int>
+inline INTTYPE Ceil2Int(float x) {
+#ifdef _FAST_FLOAT2INT
+	return CRound2Int(double(x) + _float2int_doublemagicroundeps);
+#else
+	return static_cast<INTTYPE>(ceil(x));
+#endif
+}
+template <typename INTTYPE = int>
+inline INTTYPE Ceil2Int(double x) {
+#ifdef _FAST_FLOAT2INT
+	return CRound2Int(x + _float2int_doublemagicroundeps);
+#else
+	return static_cast<INTTYPE>(ceil(x));
+#endif
+}
+template <typename INTTYPE = int>
+inline INTTYPE Round2Int(float x) {
+#ifdef _FAST_FLOAT2INT
+	return CRound2Int(double(x) + _float2int_doublemagicdelta);
+#else
+	return static_cast<INTTYPE>(floor(x + .5f));
+#endif
+}
+template <typename INTTYPE = int>
+inline INTTYPE Round2Int(double x) {
+#ifdef _FAST_FLOAT2INT
+	return CRound2Int(x + _float2int_doublemagicdelta);
+#else
+	return static_cast<INTTYPE>(floor(x + .5));
+#endif
+}
+template<typename T>
+constexpr T powi(T base, unsigned exp) {
+	T result(1);
+	while (exp) {
+		if (exp & 1)
+			result *= base;
+		exp >>= 1;
+		base *= base;
+	}
+	return result;
+}
+constexpr int log2i(unsigned val) {
+	int ret = -1;
+	while (val) {
+		val >>= 1;
+		++ret;
+	}
+	return ret;
+}
+template<typename T>
+inline T EXP(const T& a) {
+	return T(exp(a));
+}
+#define FLOOR			Floor2Int
+#define FLOOR2INT		Floor2Int
+#define CEIL			Ceil2Int
+#define CEIL2INT		Ceil2Int
+#define ROUND			Round2Int
+#define ROUND2INT		Round2Int
+#define SIN				std::sin
+#define ASIN			std::asin
+#define COS				std::cos
+#define ACOS			std::acos
+#define TAN				std::tan
+#define ATAN			std::atan
+#define ATAN2			std::atan2
+#define POW				std::pow
+#define POWI			powi
+#define LOG2I			log2i
+
+template<typename _Tp>
+inline _Tp    CLAMP(_Tp v, _Tp l0, _Tp l1) { CHECK(l0 <= l1); return std::min(std::max(v, l0), l1); }
+template<typename DtypeIn, typename DtypeOut = DtypeIn>
+inline DtypeOut ComputeAngle(const cv::Point3_<DtypeIn>& a, const cv::Point3_<DtypeIn>& b)
+{
+	DtypeIn dot = a.dot(b);
+	DtypeIn n1 = cv::norm(a);
+	DtypeIn n2 = cv::norm(b);
+	return CLAMP(DtypeOut(dot/n1/n2), DtypeOut (-1), DtypeOut(1));
+}
+
+template<typename T>
+constexpr T SQUARE(const T& a) {
+	return a * a;
+}
+
 template<typename Dtype>
 static inline int writePts2d(const std::string& path, const std::vector<cv::Point_<Dtype>>& pts)
 {
