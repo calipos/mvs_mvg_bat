@@ -4,6 +4,7 @@
 #include <set>
 #include <vector>
 #include <fstream>
+#include <map>
 #include <string> 
 #include <sstream> 
 #include "Eigen/Core"
@@ -46,8 +47,40 @@
 #define FZERO_TOLERANCE	0.0001f
 #define FINV_ZERO		1000000.f
 
-
 using dType = double;
+// structure used for sorting some indices by their score (decreasing by default)
+template <typename IndexType, typename ScoreType>
+struct TIndexScore {
+	IndexType idx;
+	ScoreType score;
+	inline TIndexScore() {}
+	inline TIndexScore(IndexType _idx, ScoreType _score) : idx(_idx), score(_score) {}
+	// compare by index (increasing)
+	inline bool operator<(IndexType i) const { return (idx < i); }
+	inline bool operator==(IndexType i) const { return (idx == i); }
+	// compare by score (decreasing)
+	inline bool operator<(const TIndexScore& r) const { return (score > r.score); }
+	inline bool operator==(const TIndexScore& r) const { return (score == r.score); }
+	static bool CompareByIndex(const TIndexScore& l, const TIndexScore& r) { return (l.idx < r.idx); }
+	static bool CompareByScore(const TIndexScore& l, const TIndexScore& r) { return (r.score < l.score); }
+#ifdef _USE_BOOST
+	// implement BOOST serialization
+	template<class Archive>
+	void serialize(Archive& ar, const unsigned int /*version*/) {
+		ar& idx;
+		ar& score;
+	}
+#endif
+};
+struct  ViewInfo {
+	int ID; // image local-ID (the index in the scene images list)
+	uint32_t points; // number of 3D points shared with the reference image
+	float scale; // image scale relative to the reference image
+	float angle; // image angle relative to the reference image (radians)
+	float area; // common image area relative to the reference image (ratio)
+};
+typedef TIndexScore<ViewInfo, dType> ViewScore;
+
 
 
 enum CameraModel
@@ -68,6 +101,7 @@ struct Camera
 	Camera();
 	Camera(const std::string& cameraStr);;
 	cv::Point_<dType> pixel2cam(const cv::Point_<dType>& p);
+	cv::Point_<dType> ptInView(const cv::Point3_<dType>& X)const;
 	static std::vector<Camera> readCameras(const std::string& cameraTXT);
 	static CameraModel stringToCameraModel(const std::string& str);
 };
@@ -83,7 +117,9 @@ struct ImageData
 	std::string imgPath;
 	std::vector<cv::Point_<dType>>thisImgPts;
 	std::vector<int>thisObjPtsIdx;
+	std::vector<ViewScore>neighbors;//用来存储neighbor信息
 	dType worldPtDepth(const cv::Point3_<dType>& X)const;
+	cv::Point3_<dType> worldPtInView(const cv::Point3_<dType>& X)const;
 	ImageData();
 	ImageData(const std::string& posStr, const std::string& ptsStr);
 	static std::map<int, ImageData> readImageData(const std::string& imagesTXT);
@@ -97,8 +133,9 @@ struct Point3dData
 	dType error;
 	std::map<int,int>tracks_imgId_imgPtId;
 	Point3dData();
-	Point3dData(const std::string& posStr);
+	Point3dData(const std::string& posStr, const int& objPointIndex);
 	static std::map<int, Point3dData> readPoint3dData(const std::string& points3DTXT);
 };
+
 
 #endif // !_TYPES_H_

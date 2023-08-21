@@ -23,7 +23,7 @@
 // (inspired by: "Multi-View Stereo for Community Photo Collections", Goesele, 2007)
 //  - nInsideROI: 0 - ignore ROI, 1 - weight more ROI points, 2 - consider only ROI points
 bool SelectNeighborViews(const std::vector<Camera>&cameras, 
-	const std::map<int, ImageData>&imgs,
+	std::map<int, ImageData>&imgs,
 	const std::map<int, Point3dData>&objPts,
 	unsigned nMinViews = 3, unsigned nMinPointViews = 2, float fOptimAngle = FD2R(12), unsigned nInsideROI = 1);
 

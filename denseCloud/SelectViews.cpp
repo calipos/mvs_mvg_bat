@@ -16,24 +16,54 @@ dType Footprint(const Camera& camera, const ImageData&img, const cv::Point3_<dTy
 {
 	return (dType)(camera.focalLength / img.worldPtDepth(X));
 }
+
+
+// keep only the best neighbors for the reference image
+bool FilterNeighborViews(std::vector<ViewScore>& neighbors, float fMinArea = 0.1f, float fMinScale = 0.2f, float fMaxScale = 2.4f, float fMinAngle = FD2R(3), float fMaxAngle = FD2R(45), unsigned nMaxViews = 12)
+{
+	// remove invalid neighbor views
+	const unsigned nMinViews(std::max(4u, nMaxViews * 3 / 4));
+	auto iter = neighbors.rbegin();
+	while (iter != neighbors.rend())
+	{
+		const ViewScore& neighbor = *iter;
+		if (neighbors.size() > nMinViews &&
+			(neighbor.idx.area < fMinArea ||
+				!ISINSIDE(neighbor.idx.scale, fMinScale, fMaxScale) ||
+				!ISINSIDE(neighbor.idx.angle, fMinAngle, fMaxAngle)))
+		{ 
+			iter = decltype(iter)(neighbors.erase(std::next(iter).base()));
+		}
+		else
+		{
+			iter++;
+		}
+	} 
+	if (neighbors.size() > nMaxViews)
+		neighbors.resize(nMaxViews);
+	return neighbors.size()!=0;
+}
+
 // compute visibility for the reference image
 // and select the best views for reconstructing the dense point-cloud;
 // extract also all 3D points seen by the reference image;
 // (inspired by: "Multi-View Stereo for Community Photo Collections", Goesele, 2007)
 //  - nInsideROI: 0 - ignore ROI, 1 - weight more ROI points, 2 - consider only ROI points
 bool SelectNeighborViews(const std::vector<Camera>& cameras,
-	const std::map<int, ImageData>& imgs,
+	std::map<int, ImageData>& imgs,
 	const std::map<int, Point3dData>& objPts,
 	unsigned nMinViews, unsigned nMinPointViews, float fOptimAngle, unsigned nInsideROI)
 {
-	int nCalibratedImages = imgs.size();
-	for (const auto&img: imgs)
+	unsigned nCalibratedImages = imgs.size();
+	for (auto&img: imgs)
 	{
 		unsigned nPoints = 0;
 		dType avgDepth = 0;
 		///extract also all 3D points seen by the reference image;
 		std::vector<int>pointsID;
 		int imgID = img.first;
+		std::vector<ViewScore>& neighbors = img.second.neighbors;
+		CHECK(neighbors.size()==0);
 		struct Score {
 			float score;
 			float avgScale;
@@ -93,28 +123,78 @@ bool SelectNeighborViews(const std::vector<Camera>& cameras,
 		CHECK(nPoints > 3);
 
 		// select best neighborViews
-		std::vector<cv::Point_<dType>>projs(objPts.size());
-		for (const auto&img:imgs)
+		std::vector<cv::Point_<dType>>projs;
+		projs.reserve(objPts.size());
+		if (neighbors.size() == 0)
 		{
-			const int& ID_B = img.second.imageId;
-			const Score& score = scores[ID_B];
-			if (score.points < 3)
-				continue;
-			CHECK(imgID != ID_B);
-			// compute how well the matched features are spread out (image covered area)
-			const cv::Point2f boundsA(cameras.at(imgs.at(imgID).cameraId).width, cameras.at(imgs.at(imgID).cameraId).height);
-			const cv::Point2f boundsB(cameras.at(imgs.at(ID_B).cameraId).width, cameras.at(imgs.at(ID_B).cameraId).height);
-			for (const auto&idx:pointsID)
+			
+			for (const auto& img : imgs)
 			{
-				CHECK(imgs.count(imgID));
-				if (imgs.count(imgID) == 0)continue;
-				const cv::Point3_<dType>& point = objPts.at(idx).objPt;
-				cv::Point3_<dType>& ptA = projs.emplace_back(imageData.camera.ProjectPointP(point));
-				cv::Point3_<dType> ptB = imageDataB.camera.ProjectPointP(point);
-				if (!imageData.camera.IsInside(ptA, boundsA) || !imageDataB.camera.IsInside(ptB, boundsB))
-					projs.RemoveLast();
+				const int& ID_B = img.second.imageId;
+				const Score& score = scores[ID_B];
+				if (score.points < 3)
+					continue;
+				CHECK(imgID != ID_B);
+				// compute how well the matched features are spread out (image covered area)
+				const cv::Point2f boundsA(cameras.at(imgs.at(imgID).cameraId).width, cameras.at(imgs.at(imgID).cameraId).height);
+				const cv::Point2f boundsB(cameras.at(imgs.at(ID_B).cameraId).width, cameras.at(imgs.at(ID_B).cameraId).height);
+				for (const auto& idx : pointsID)
+				{
+					objPts.at(idx).tracks_imgId_imgPtId;
+					CHECK(objPts.at(idx).tracks_imgId_imgPtId.count(imgID));
+					if (objPts.at(idx).tracks_imgId_imgPtId.count(ID_B) == 0)
+						continue;
+					const cv::Point3_<dType>& point = objPts.at(idx).objPt;
+					cv::Point_<dType> ptA = cameras.at(imgs.at(imgID).cameraId).ptInView(imgs.at(imgID).worldPtInView(point));
+					cv::Point_<dType> ptB = cameras.at(imgs.at(ID_B).cameraId).ptInView(imgs.at(ID_B).worldPtInView(point));
+					//if (!imageData.camera.IsInside(ptA, boundsA) || !imageDataB.camera.IsInside(ptB, boundsB)) 
+					if (IsInside<dType>(ptA, boundsA) && IsInside<dType>(ptB, boundsB))
+					{
+						projs.emplace_back(ptA);
+						//std::cout << point << ptA << std::endl;
+					}
+				}
+				CHECK(projs.size() <= score.points);
+				if (projs.empty())				continue;
+				const float area(ComputeCoveredArea<dType, 2, 16, false>(projs, boundsA));
+				projs.clear();
+				// store image score
+				ViewScore neighbor;
+				neighbor.idx.ID = ID_B;
+				neighbor.idx.points = score.points;
+				neighbor.idx.scale = score.avgScale / score.points;
+				neighbor.idx.angle = score.avgAngle / score.points;
+				neighbor.idx.area = area;
+				neighbor.score = score.score * std::max(area, 0.01f);
+				neighbors.emplace_back(neighbor);
 			}
+			{
+				std::sort(neighbors.begin(), neighbors.end(), [](const auto& a, const auto& b) {return a.score > b.score; });
+				std::stringstream msg;
+				msg << "Reference image " << imgID << " sees " << neighbors.size() << " views : ";
+				for (const auto&n: neighbors)
+				{
+					msg << n.idx.ID << "(" << n.idx.points << "," << n.idx.scale << ")  ";
+				}
+				msg << "(" << nPoints << "  shared points)";
+				std::cout << msg.str() << std::endl;
+			}
+			
 		}
+		if (pointsID.size() <= 3 || neighbors.size() < std::min(nMinViews, nCalibratedImages - 1))
+		{
+			std::cout << "error: reference image %3u has not enough images in view " << imgID << std::endl;;
+			return false;
+		}
+#define __fMinArea__ (0.05)
+#define __fMinAngle__ (3)
+#define __fMaxAngle__ (65)
+#define __nMaxViews__ (12)
+		const float fMinArea(__fMinArea__);
+		const float fMinScale(0.2f), fMaxScale(3.2f);
+		const float fMinAngle(FD2R(__fMinAngle__));
+		const float fMaxAngle(FD2R(__fMaxAngle__));
+		FilterNeighborViews(neighbors, fMinArea, fMinScale, fMaxScale, fMinAngle, fMaxAngle, __nMaxViews__);
 	}
 	return true;
 }

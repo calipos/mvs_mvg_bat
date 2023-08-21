@@ -56,6 +56,15 @@ std::vector<Camera> Camera::readCameras(const std::string& cameraTXT)
 	CHECK(cameraIds.size() == ret.size());
 	return ret;
 }
+cv::Point_<dType> Camera::ptInView(const cv::Point3_<dType>& X)const
+{
+	cv::Point_<dType> p(X.x/ X.z, X.y/ X.z);
+	return cv::Point_<dType>
+		(
+		p.x*focalLength + cx,
+		p.y*focalLength + cy
+			);
+}
 
 
 ImageData::ImageData() {}
@@ -101,6 +110,14 @@ dType ImageData::worldPtDepth(const cv::Point3_<dType>& X)const
 {
 	return worldToCamera.ptr<dType>(2)[0] * X.x + worldToCamera.ptr<dType>(2)[1] * X.y + worldToCamera.ptr<dType>(2)[2] * X.z + worldToCamera.ptr<dType>(2)[3];
 }
+cv::Point3_<dType> ImageData::worldPtInView(const cv::Point3_<dType>& X)const
+{
+	return cv::Point3_<dType>(
+		worldToCamera.ptr<dType>(0)[0] * X.x + worldToCamera.ptr<dType>(0)[1] * X.y + worldToCamera.ptr<dType>(0)[2] * X.z + worldToCamera.ptr<dType>(0)[3],
+		worldToCamera.ptr<dType>(1)[0] * X.x + worldToCamera.ptr<dType>(1)[1] * X.y + worldToCamera.ptr<dType>(1)[2] * X.z + worldToCamera.ptr<dType>(1)[3],
+		worldToCamera.ptr<dType>(2)[0] * X.x + worldToCamera.ptr<dType>(2)[1] * X.y + worldToCamera.ptr<dType>(2)[2] * X.z + worldToCamera.ptr<dType>(2)[3]
+		);
+}
 std::map<int, ImageData> ImageData::readImageData(const std::string& imagesTXT)
 {
 	std::map<int, ImageData> ret;
@@ -122,11 +139,12 @@ std::map<int, ImageData> ImageData::readImageData(const std::string& imagesTXT)
 }
 
 Point3dData::Point3dData() {}
-Point3dData::Point3dData(const std::string& posStr)
+Point3dData::Point3dData(const std::string& posStr,const int&objPointIndex)
 {
 	std::vector<std::string> params = splitString(posStr, " ", true);
 	CHECK(params.size() > 8);
-	objPtId = str2number<int>(params[0]);
+	//objPtId = str2number<int>(params[0]);  //感觉mvs没有用这个
+	objPtId = objPointIndex;
 	objPt.x = str2number<dType>(params[1]);
 	objPt.y = str2number<dType>(params[2]);
 	objPt.z = str2number<dType>(params[3]);
@@ -147,13 +165,14 @@ std::map<int, Point3dData> Point3dData::readPoint3dData(const std::string& point
 	std::map<int, Point3dData> ret;
 	std::fstream fin(points3DTXT, std::ios::in);
 	std::string aline;
+	int objPointIndex = 0;
 	while (std::getline(fin, aline))
 	{
 		if (aline.length() < 1)continue;
 		if (aline[0] == '#')continue;
 		else
 		{
-			auto theObjPt = Point3dData(aline);
+			auto theObjPt = Point3dData(aline, objPointIndex++);
 			ret[theObjPt.objPtId] = std::move(theObjPt);
 		}
 	}

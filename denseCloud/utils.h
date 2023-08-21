@@ -114,6 +114,9 @@ inline T EXP(const T& a) {
 #define POWI			powi
 #define LOG2I			log2i
 
+
+template<typename _Tp>
+inline bool   ISINSIDE(_Tp v, _Tp l0, _Tp l1) { CHECK(l0 < l1); return l0 <= v && v < l1; }
 template<typename _Tp>
 inline _Tp    CLAMP(_Tp v, _Tp l0, _Tp l1) { CHECK(l0 <= l1); return std::min(std::max(v, l0), l1); }
 template<typename DtypeIn, typename DtypeOut = DtypeIn>
@@ -259,4 +262,30 @@ cv::Point3_<Dtype> eigen2pt(const Eigen::Matrix<Dtype, 3, 1>& t)
 {
 	return cv::Point3_<Dtype>(t[0],t[1],t[2]);
 };
+template <typename TYPE>
+inline bool IsInside(const cv::Point_<TYPE>& pt, const cv::Point_<TYPE>& size) 
+{
+	return pt.x >= 0 && pt.y >= 0 && pt.x < size.x&& pt.y < size.y;
+}
+// given an array of values and their bound, approximate the area covered, in percentage
+template<typename TYPE, int n, int s, bool bCentered>
+inline TYPE ComputeCoveredArea(const std::vector<cv::Point_<TYPE>>values, const cv::Point2f bound, int stride = n) {
+	CHECK(values.size() > 0);
+	typedef Eigen::Matrix<TYPE, 1, n, Eigen::RowMajor> Vector;
+	typedef Eigen::Map<const Vector, Eigen::Unaligned> MapVector;
+	typedef Eigen::Matrix<TYPE, Eigen::Dynamic, n, Eigen::RowMajor> Matrix;
+	typedef Eigen::Map<const Matrix, Eigen::Unaligned, Eigen::OuterStride<> > MapMatrix;
+	typedef Eigen::Matrix<unsigned, s, s, Eigen::RowMajor> MatrixSurface;
+	const MapMatrix points(&(values[0].x), values.size(), n, Eigen::OuterStride<>(stride));
+	const Vector norm(bound.x, bound.y);
+	const Vector offset(Vector::Constant(bCentered ? TYPE(0.5) : TYPE(0)));
+	MatrixSurface surface;
+	surface.setZero();
+	for (size_t i = 0; i < values.size(); ++i) {
+		const Vector point((points.row(i).cwiseQuotient(norm) + offset) * TYPE(s));
+		CHECK((point(0) >= 0 && point(0) < s) && (point(1) >= 0 && point(1) < s));
+		surface(FLOOR2INT(point(0)), FLOOR2INT(point(1))) = 1;
+	}
+	return TYPE(surface.sum()) / (s * s);
+} // ComputeCoveredArea
 #endif // !_UTILS_H_
