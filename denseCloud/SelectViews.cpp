@@ -171,7 +171,7 @@ bool SelectNeighborViews(const std::vector<Camera>& cameras,
 			{
 				std::sort(neighbors.begin(), neighbors.end(), [](const auto& a, const auto& b) {return a.score > b.score; });
 				std::stringstream msg;
-				msg << "Reference image " << imgID << " sees " << neighbors.size() << " views : ";
+				msg << "\nReference image " << imgID << " sees " << neighbors.size() << " views : ";
 				for (const auto&n: neighbors)
 				{
 					msg << n.idx.ID << "(" << n.idx.points << "," << n.idx.scale << ")  ";
@@ -183,7 +183,7 @@ bool SelectNeighborViews(const std::vector<Camera>& cameras,
 		}
 		if (pointsID.size() <= 3 || neighbors.size() < std::min(nMinViews, nCalibratedImages - 1))
 		{
-			std::cout << "error: reference image %3u has not enough images in view " << imgID << std::endl;;
+			std::cout << "error: reference image " << imgID <<" has not enough images in view " << std::endl;;
 			return false;
 		}
 #define __fMinArea__ (0.05)

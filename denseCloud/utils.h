@@ -10,9 +10,34 @@
 #include "Eigen/Core"
 #include "Eigen/Geometry"
 #include "opencv2/opencv.hpp"
+#include "timer.h"
+#define TIMER_START()		//SEACAVE::Timer::SysType timerStart = SEACAVE::Timer::GetSysTime()
+#define TIMER_UPDATE()		//timerStart = SEACAVE::Timer::GetSysTime()
+#define TIMER_GET()			//SEACAVE::Timer::SysTime2TimeMs(SEACAVE::Timer::GetSysTime() - timerStart)
+#define TIMER_GET_INT()		//((SEACAVE::Timer::SysType)TIMER_GET())
+#define TIMER_GET_FORMAT()	//SEACAVE::Util::formatTime(TIMER_GET_INT())
 
-
-
+#define TD_TIMER_OFF		0
+#define TD_TIMER_ON			1
+#ifndef TD_TIMER
+#define TD_TIMER			TD_TIMER_ON
+#endif
+#if TD_TIMER == TD_TIMER_OFF
+#define TD_TIMER_START()
+#define TD_TIMER_UPDATE()
+#define TD_TIMER_GET() 0
+#define TD_TIMER_GET_INT() 0
+#define TD_TIMER_GET_FMT() String()
+#define TD_TIMER_STARTD()
+#define TD_TIMER_UPDATED()
+#endif
+#if TD_TIMER == TD_TIMER_ON
+#define TD_TIMER_START()	TIMER_START()
+#define TD_TIMER_UPDATE()	TIMER_UPDATE()
+#define TD_TIMER_GET()		TIMER_GET()
+#define TD_TIMER_GET_INT()	TIMER_GET_INT()
+#define TD_TIMER_GET_FMT()	TIMER_GET_FORMAT()
+#endif
 
 #ifdef _FAST_FLOAT2INT
 // fast float to int conversion
@@ -160,14 +185,15 @@ int writePts(const std::string& path, const std::vector<cv::Point3_<Dtype>>& pts
 template<typename Dtype>
 int writePts(const std::string& path, const cv::Mat_<Dtype>& pts)
 {
-	std::string aline;
-	std::fstream fin1(path, std::ios::out);
+	std::stringstream aline;
+	std::fstream fin1(path, std::ios::out); 
 	for (int i = 0; i < pts.cols; i++)
 	{
 		cv::Mat x = pts.col(i);
 		x /= x.at<Dtype>(3, 0); // πÈ“ªªØ
-		fin1 << x.at<Dtype>(0, 0) << " " << x.at<Dtype>(1, 0) << " " << x.at<Dtype>(2, 0) << std::endl;
+		aline << x.at<Dtype>(0, 0) << " " << x.at<Dtype>(1, 0) << " " << x.at<Dtype>(2, 0) << std::endl;
 	}
+	fin1 << aline.str();
 	fin1.close();
 	return 0;
 }

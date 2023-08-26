@@ -58,42 +58,42 @@ void testQt()
 
 	return;
 }
-//std::vector<cv::Point_<dType>> getStandardImgPts(const cv::Size& size)
-//{
-//	std::vector<cv::Point_<dType>> ret(size.width* size.height);
-//#pragma omp parallel for
-//	for (int i = 0; i < ret.size(); i++)
-//	{
-//		ret[i].x = i % size.width;
-//		ret[i].y = i / size.width;
-//	}
-//	return ret;
-//}
-//std::vector<cv::Point_<dType>> getFlowImgPts(const std::vector<cv::Point_<dType>>&standardImgPts,const std::string&flowPath)
-//{
-//	std::vector<cv::Point_<dType>> flowImgPts(standardImgPts.size());
-//	size_t size = 0;
-//	{
-//		std::ifstream in(flowPath);
-//		in.seekg(0, std::ios::end);
-//		size = in.tellg();
-//		in.close(); 
-//	}
-//	CHECK(standardImgPts.size() * 2 * sizeof(float) == size);
-//	std::vector<float> flowData(standardImgPts.size() * 2);
-//	{
-//		std::ifstream in(flowPath,std::ios::binary);
-//		in.read((char*)&flowData[0],size);
-//		in.close();
-//	}
-//#pragma omp parallel for
-//	for (int i = 0; i < standardImgPts.size(); i++)
-//	{
-//		flowImgPts[i].x = standardImgPts[i].x + flowData[2 * i];
-//		flowImgPts[i].y = standardImgPts[i].y + flowData[2 * i+1];;
-//	}
-//	return flowImgPts;
-//}
+std::vector<cv::Point_<dType>> getStandardImgPts(const cv::Size& size)
+{
+	std::vector<cv::Point_<dType>> ret(size.width* size.height);
+#pragma omp parallel for
+	for (int i = 0; i < ret.size(); i++)
+	{
+		ret[i].x = i % size.width;
+		ret[i].y = i / size.width;
+	}
+	return ret;
+}
+std::vector<cv::Point_<dType>> getFlowImgPts(const std::vector<cv::Point_<dType>>&standardImgPts,const std::string&flowPath)
+{
+	std::vector<cv::Point_<dType>> flowImgPts(standardImgPts.size());
+	size_t size = 0;
+	{
+		std::ifstream in(flowPath);
+		in.seekg(0, std::ios::end);
+		size = in.tellg();
+		in.close(); 
+	}
+	CHECK(standardImgPts.size() * 2 * sizeof(float) == size);
+	std::vector<float> flowData(standardImgPts.size() * 2);
+	{
+		std::ifstream in(flowPath,std::ios::binary);
+		in.read((char*)&flowData[0],size);
+		in.close();
+	}
+#pragma omp parallel for
+	for (int i = 0; i < standardImgPts.size(); i++)
+	{
+		flowImgPts[i].x = standardImgPts[i].x + flowData[2 * i];
+		flowImgPts[i].y = standardImgPts[i].y + flowData[2 * i+1];;
+	}
+	return flowImgPts;
+}
 int main(int argc, char** argv)
 {
 	if (argc != 2)
@@ -124,45 +124,45 @@ int main(int argc, char** argv)
 	std::map<int, Point3dData>objPts = Point3dData::readPoint3dData(points3DTXT);
 
 
-	SelectNeighborViews(cameras, imgs, objPts);
+	//SelectNeighborViews(cameras, imgs, objPts);
 
 
 
 
 
-//	std::vector<int>imgKeys;
-//	imgKeys.reserve(imgs.size());
-//	for (auto&d: imgs)
-//	{
-//		imgKeys.emplace_back(d.first);
-//	}
-//	std::sort(imgKeys.begin(), imgKeys.end());
-//	LOG(INFO) << "img size = " << imgKeys.size();
-//	cv::Mat imgFirst = cv::imread("viewer/"+imgs[imgKeys[0]].imgPath);
-//	CHECK(!imgFirst.empty());
-//	std::vector<cv::Point_<dType>>standardImgPts = getStandardImgPts(imgFirst.size());
-//	std::vector<cv::Point_<dType>>standardCameraPts(standardImgPts.size());
-//#pragma omp parallel for
-//	for (int p = 0; p < standardImgPts.size(); p++)
-//	{
-//		standardCameraPts[p] = cameras[0].pixel2cam(standardImgPts[p]);
-//	}
-//	for (size_t i = 0; i < imgKeys.size()-1; i++)
-//	{
-//		std::string imgAPath = imgs[imgKeys[i]].imgPath;
-//		std::string imgBPath = imgs[imgKeys[i + 1]].imgPath;
-//		std::string imgBFlowPath ="RAFT/"+ imgAPath + "-" + imgBPath + ".bin";
-//		std::vector<cv::Point_<dType>>flowImgPts = getFlowImgPts(standardImgPts, imgBFlowPath);
-//		std::vector<cv::Point_<dType>>flowCameraPts(flowImgPts.size());
-//#pragma omp parallel for
-//		for (int p = 0; p < standardImgPts.size(); p++)
-//		{
-//			flowCameraPts[p] = cameras[0].pixel2cam(flowImgPts[p]);
-//		}
-//		cv::Mat_<dType> pts;
-//		cv::triangulatePoints(imgs[imgKeys[i]].worldToCamera, imgs[imgKeys[i + 1]].worldToCamera, flowCameraPts, flowCameraPts, pts);
-//		writePts("RAFT/" + imgAPath + ".pts", pts);
-//	}
+	std::vector<int>imgKeys;
+	imgKeys.reserve(imgs.size());
+	for (auto&d: imgs)
+	{
+		imgKeys.emplace_back(d.first);
+	}
+	std::sort(imgKeys.begin(), imgKeys.end());
+	LOG(INFO) << "img size = " << imgKeys.size();
+	cv::Mat imgFirst = cv::imread("viewer/"+imgs[imgKeys[0]].imgPath);
+	CHECK(!imgFirst.empty());
+	std::vector<cv::Point_<dType>>standardImgPts = getStandardImgPts(imgFirst.size());
+	std::vector<cv::Point_<dType>>standardCameraPts(standardImgPts.size());
+#pragma omp parallel for
+	for (int p = 0; p < standardImgPts.size(); p++)
+	{
+		standardCameraPts[p] = cameras[0].pixel2cam(standardImgPts[p]);
+	}
+	for (size_t i = 0; i < imgKeys.size()-1; i++)
+	{
+		std::string imgAPath = imgs[imgKeys[i]].imgPath;
+		std::string imgBPath = imgs[imgKeys[i + 1]].imgPath;
+		std::string imgBFlowPath ="RAFT/"+ imgAPath + "-" + imgBPath + ".bin";
+		std::vector<cv::Point_<dType>>flowImgPts = getFlowImgPts(standardImgPts, imgBFlowPath);
+		std::vector<cv::Point_<dType>>flowCameraPts(flowImgPts.size());
+#pragma omp parallel for
+		for (int p = 0; p < standardImgPts.size(); p++)
+		{
+			flowCameraPts[p] = cameras[0].pixel2cam(flowImgPts[p]);
+		}
+		cv::Mat_<dType> pts;
+		cv::triangulatePoints(imgs[imgKeys[i]].worldToCamera, imgs[imgKeys[i + 1]].worldToCamera, standardCameraPts, flowCameraPts, pts);
+		writePts("RAFT/" + imgAPath + ".pts", pts);
+	}
 	//
 	return 0;
 }
