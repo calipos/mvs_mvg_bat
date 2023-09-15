@@ -133,6 +133,17 @@ struct Landmarks
 		ar(cereal::make_nvp("faces", faces));
 	}
 }; 
+struct LandmarkViz
+{
+	std::vector<std::string >path;
+	std::vector<std::vector<int>>featId_landmarkId; 
+	template <class Archive>
+	void serialize(Archive& ar)
+	{
+		ar(cereal::make_nvp("path", path));
+		ar(cereal::make_nvp("featId_landmarkId", featId_landmarkId));
+	}
+};
 
 static std::vector<unsigned char> randData; 
 openMVG::features::SIFT_Image_describer::Regions_type::DescriptorT getRandDescripBaesOnIdx(const int & descriptorLength, const int&  i)
@@ -195,6 +206,7 @@ int generateFeature(int argc, char** argv)
 	std::vector<int> imgIdx;
 	imgIdx.reserve(sfm_data.views.size()); 
 	std::vector<std::map<openMVG::IndexT, int>> featureIdxs(sfm_data.views.size());
+	LandmarkViz landmarkViz;
 	{
 		openMVG::system::Timer timer;
 		openMVG::image::Image<unsigned char> imageGray;
@@ -214,6 +226,11 @@ int generateFeature(int argc, char** argv)
 		}
 #pragma omp parallel for
 #endif
+
+
+		
+		landmarkViz.path.resize(sfm_data.views.size());
+		landmarkViz.featId_landmarkId.resize(sfm_data.views.size());
 		for (int viewIdx = 0; viewIdx < static_cast<int>(sfm_data.views.size()); ++viewIdx)
 		{
 			openMVG::sfm::Views::const_iterator iterViews = sfm_data.views.begin();
@@ -223,6 +240,7 @@ int generateFeature(int argc, char** argv)
 			const std::string	sFeat = stlplus::create_filespec(featureOutdir, stlplus::basename_part(sView_filename), "feat");
 			const std::string	sDesc = stlplus::create_filespec(featureOutdir, stlplus::basename_part(sView_filename), "desc");
 			std::string jsonPath = stlplus::create_filespec(landmarksRoot, stlplus::basename_part(sView_filename), "json");
+			
 			Landmarks data;
 			try
 			{
@@ -353,6 +371,18 @@ int generateFeature(int argc, char** argv)
 				featureIdxs[view->id_view][landmarkIdx] = validCnt;
 				validCnt++;
 			}
+
+			landmarkViz.path[viewIdx] = sView_filename;
+			for (const auto&landmarkIdFeatId: featureIdxs[view->id_view])
+			{
+				const int& landmarkId = landmarkIdFeatId.first;
+				const int& featId = landmarkIdFeatId.second;
+				if (featId>=0)
+				{
+					landmarkViz.featId_landmarkId[viewIdx].emplace_back(landmarkId);
+				}				
+			}
+
 			//std::cout << "thisFeaturePath : " << sFeat << " : " << regions_ptr.get()->Features().size() << std::endl;
 			//std::cout << "thisDescripPath : " << sDesc << " : " << regions_ptr.get()->Descriptors().size() << std::endl;
 			regions_ptr->Save(sFeat, sDesc);
@@ -381,7 +411,25 @@ int generateFeature(int argc, char** argv)
 		OPENMVG_LOG_INFO << "Task done in (s): " << timer.elapsed();
 	}
 	Save(sfm_data, sfmJsonPath, openMVG::sfm::ESfM_Data(openMVG::sfm::VIEWS | openMVG::sfm::INTRINSICS));
-	//return 0;
+	try
+	{
+		const std::string sfmJsonDir = stlplus::folder_part(sfmJsonPath);// +featIdToLandmarkId.json;
+		const std::string sOutputFeatIdToLandmarkId = stlplus::create_filespec(sfmJsonDir, "featIdToLandmarkId","json");
+		std::stringstream ss;
+		{
+			cereal::JSONOutputArchive archive(ss);
+			archive(cereal::make_nvp("path", landmarkViz.path));
+			archive(cereal::make_nvp("featId_landmarkId", landmarkViz.featId_landmarkId));
+		}
+
+		std::fstream fout(sOutputFeatIdToLandmarkId, std::ios::out);
+		fout << ss.str() << std::endl;
+		fout.close();
+	}
+	catch (const std::exception&)
+	{
+		return EXIT_FAILURE;
+	}
 	
 	openMVG::matching::PairWiseMatches map_PutativeMatches;
 	for (openMVG::IndexT i = 0; i < imgIdx.size(); i++)
@@ -398,7 +446,7 @@ int generateFeature(int argc, char** argv)
 				}
 				
 			}
-			if (currentMatch.size()>10)
+			if (currentMatch.size()>100)
 			{
 				map_PutativeMatches.insert(std::pair<openMVG::Pair, openMVG::matching::IndMatches>(currentPair, currentMatch));
 			}			

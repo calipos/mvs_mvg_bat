@@ -90,7 +90,7 @@ REM Densify options:
                                         REM - disabled, 1 - enabled, 2 - adaptive)
   REM --crop-to-roi arg (=1)                crop scene using the region-of-interest
   REM --remove-dmaps arg (=0)               remove depth-maps after fusion
-%openMvsPath%\DensifyPointCloud.exe %workMvsSpace%/scene.mvs --dense-config-file %workMvsSpace%/Densify.ini --resolution-level 1 --number-views 4 -w %workMvsSpace%  --verbosity 6        --iters 3
+%openMvsPath%\DensifyPointCloud.exe %workMvsSpace%/scene.mvs --dense-config-file %workMvsSpace%/Densify.ini --resolution-level 1 --number-views 2 -w %workMvsSpace%  --verbosity 6        --iters 2
 ::
 echo "13. Reconstruct the mesh"
 %openMvsPath%\ReconstructMesh scene_dense.mvs -w "%workMvsSpace%"

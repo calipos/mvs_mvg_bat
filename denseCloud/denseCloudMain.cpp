@@ -124,7 +124,7 @@ int main(int argc, char** argv)
 	std::map<int, Point3dData>objPts = Point3dData::readPoint3dData(points3DTXT);
 
 
-	//SelectNeighborViews(cameras, imgs, objPts);
+	SelectNeighborViews(cameras, imgs, objPts);
 
 
 

@@ -21,7 +21,7 @@ mkdir %workColmapSpace%
 
 echo "-1. prepare images"
 ::python.exe .\mp42jpg.py  %piciturePath%\8.mp4  2
-python.exe .\mp42jpgAndFigureLandmarks.py  %piciturePath%\10.mp4  2  %workLmsSpace%
+python.exe .\mp42jpgAndFigureLandmarks.py  %piciturePath%\11.mp4  2  %workLmsSpace%
 
 :: parameter support: ALL FACEOUTLINE LEFTEYEBROW RIGHTEYEBROW NOSEBRIDGE NOSTRIL LEFTEYE RIGHTEYE MOUTH
 ::bin\DlibLandmark.exe  %piciturePath% %workLmsSpace% FACEOUTLINE LEFTEYEBROW RIGHTEYEBROW NOSEBRIDGE LEFTEYE RIGHTEYE MOUTH 
@@ -55,7 +55,7 @@ echo "4. Filter matches"
 ::echo "5. Incremental reconstruction(sequential)"
 ::D:\repo\openMVG\src\build-2019\Windows-AMD64-Release\Release\openMVG_main_SfM -i %workSfmSpace%\matches\sfm_data.json -m %workSfmSpace%\matches -o %workSfmSpace% -s INCREMENTAL   
 
- 
+
 
 echo "6. Incremental reconstruction(GLOBAL)  (INCREMENTAL)"
 %openMvgPath%\openMVG_main_SfM -i %workSfmSpace%\matches\sfm_data.json -m %workSfmSpace%\matches -o %workSfmSpace% -s INCREMENTAL        -M  %workSfmSpace%\matches\matches.f.bin  -f  NONE
