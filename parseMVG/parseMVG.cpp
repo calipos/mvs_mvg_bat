@@ -80,7 +80,15 @@ std::vector<std::string> splitString(const std::string& src, const std::string& 
 	}
 	return std::move(result);
 }
-
+struct Pt3d_MeshId
+{
+	std::map<int, int>pt3d_MeshId;
+	template <class Archive>
+	void serialize(Archive& ar)
+	{ 
+		ar(cereal::make_nvp("pt3d_MeshId", pt3d_MeshId));
+	}
+};
 struct LandmarkViz
 {
 	std::vector<std::string >path;
@@ -140,7 +148,7 @@ int main(int argc, char** argv)
 	{ 
 		return EXIT_FAILURE;
 	}
-	 
+	Pt3d_MeshId pt3dMeshId;
 	std::map<int, int>featId_landmarkId;
 	for (const auto&d: sfm_data.structure)
 	{
@@ -172,7 +180,28 @@ int main(int argc, char** argv)
 			}
 			return EXIT_FAILURE;
 		} 
+		if (landmarkId<0)
+		{
+			return EXIT_FAILURE;
+		}
+		pt3dMeshId.pt3d_MeshId[static_cast<int>(d.first)] = landmarkId;
 		//featId_landmarkId[static_cast<int>(id_feat)] = landmarkId;
+	}
+	try
+	{
+		const std::string pt3dMeshIdJson = stlplus::create_filespec(stlplus::folder_part(sfmJsonPath), "pt3dMeshId", "json");
+		std::stringstream ss;
+		{
+			cereal::JSONOutputArchive archive(ss); 
+			archive(cereal::make_nvp("pt3dMeshId", pt3dMeshId.pt3d_MeshId));
+		} 
+		std::fstream fout(pt3dMeshIdJson, std::ios::out);
+		fout << ss.str() << std::endl;
+		fout.close();
+	}
+	catch (const std::exception&)
+	{
+		return EXIT_FAILURE;
 	}
 	return 0;
 }
