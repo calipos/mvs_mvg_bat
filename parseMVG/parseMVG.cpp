@@ -152,6 +152,7 @@ int main(int argc, char** argv)
 	std::map<int, int>featId_landmarkId;
 	for (const auto&d: sfm_data.structure)
 	{
+		const  openMVG::IndexT& objPtId = d.first;
 		const openMVG::sfm::Landmark& lk = d.second;
 		const openMVG::sfm::Observations& obs = lk.obs;
 		std::map<int, int>feat_id_cnt;
@@ -161,6 +162,7 @@ int main(int argc, char** argv)
 		{
 			const int& viewId = d2.first;
 			const openMVG::IndexT& id_feat = d2.second.id_feat;
+			id_feat_ = static_cast<int>(id_feat);
 			const openMVG::IndexT& id_landmark = landmarkViz.featId_landmarkId[viewId][id_feat];
 			if (feat_id_cnt.count(id_landmark)==0)
 			{
@@ -180,11 +182,15 @@ int main(int argc, char** argv)
 			}
 			return EXIT_FAILURE;
 		} 
+		else
+		{
+			std::cout << "objPtId=" << objPtId   << "   id_feat=" << id_feat_ << std::endl;
+		}
 		if (landmarkId<0)
 		{
 			return EXIT_FAILURE;
 		}
-		pt3dMeshId.pt3d_MeshId[static_cast<int>(d.first)] = landmarkId;
+		pt3dMeshId.pt3d_MeshId[static_cast<int>(objPtId)] = landmarkId;
 		//featId_landmarkId[static_cast<int>(id_feat)] = landmarkId;
 	}
 	try

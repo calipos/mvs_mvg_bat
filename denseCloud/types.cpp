@@ -143,8 +143,8 @@ Point3dData::Point3dData(const std::string& posStr,const int&objPointIndex)
 {
 	std::vector<std::string> params = splitString(posStr, " ", true);
 	CHECK(params.size() > 8);
-	//objPtId = str2number<int>(params[0]);  //感觉mvs没有用这个
-	objPtId = objPointIndex;
+	objPtId = str2number<int>(params[0]);  //感觉mvs没有用这个
+	//objPtId = objPointIndex;
 	objPt.x = str2number<dType>(params[1]);
 	objPt.y = str2number<dType>(params[2]);
 	objPt.z = str2number<dType>(params[3]);

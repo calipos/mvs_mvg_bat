@@ -77,6 +77,7 @@ def draw_landmarks_on_image(rgb_image, detection_result):
   # Loop through the detected faces to visualize.
   for idx in range(len(face_landmarks_list)):
     face_landmarks = face_landmarks_list[idx] 
+    print(len(face_landmarks))
     face_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
     face_landmarks_proto.landmark.extend([
       landmark_pb2.NormalizedLandmark(x=landmark.x, y=landmark.y, z=landmark.z) for landmark in face_landmarks
@@ -91,6 +92,7 @@ def draw_landmarks_on_image(rgb_image, detection_result):
   return annotated_image
     
 if __name__ == '__main__':
+    print(FACEMESH_TESSELATION)
     video_path = sys.argv[1]  
     time_interval=int(sys.argv[2] )
     jsonRoot=sys.argv[3] 

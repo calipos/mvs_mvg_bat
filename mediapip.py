@@ -126,6 +126,7 @@ def landmark2d(img,detection_result):
         return None,None
     face_landmarks = face_landmarks_list[0]
     landmark3dList=np.zeros((len(face_landmarks), 3)) 
+    print(len(face_landmarks))
     for i in range(len(face_landmarks)):
         landmark3dList[i]=[face_landmarks[i].x, face_landmarks[i].y, face_landmarks[i].z] 
  
@@ -307,6 +308,7 @@ if __name__ == '__main__2':
 if __name__ == '__main__':   
     #imgsRoot=sys.argv[1] 
     #jsonRoot=sys.argv[2]   
+    print(constFaces)
     imgsRoot='D:\\repo\\mvs_mvg_bat\\viewer'
     jsonRoot='D:\\repo\\mvs_mvg_bat\\viewerout\landmarks'
     imgNames=findAllFile(imgsRoot)

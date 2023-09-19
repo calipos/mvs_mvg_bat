@@ -55,8 +55,15 @@ bool SelectNeighborViews(const std::vector<Camera>& cameras,
 	unsigned nMinViews, unsigned nMinPointViews, float fOptimAngle, unsigned nInsideROI)
 {
 	unsigned nCalibratedImages = imgs.size();
+	std::map<int, int>imgIdToImgIdx;
+	int imgIdx = 0;
+	for (auto& img : imgs)
+	{
+		imgIdToImgIdx[img.first] = imgIdx++;
+	}
 	for (auto&img: imgs)
 	{
+		imgIdx= imgIdToImgIdx[img.first];
 		unsigned nPoints = 0;
 		dType avgDepth = 0;
 		///extract also all 3D points seen by the reference image;
@@ -96,13 +103,15 @@ bool SelectNeighborViews(const std::vector<Camera>& cameras,
 			// score shared views
 			const cv::Point3_<dType> V1(eigen2pt(img.second.camera_t) - objPt.second.objPt);
 			const float footprint1(Footprint(cameras[img.second.cameraId], img.second, objPt.second.objPt));
-			for (const auto&view : imgs)
+			
+			for (const auto& view : imgs)
 			{
+				imgIdx = imgIdToImgIdx[view.first];
 				if (view.second.imageId == imgID)
 					continue;
 				const cv::Point3_<dType> V2(eigen2pt(view.second.camera_t) - objPt.second.objPt);
 				const float fAngle(ACOS(ComputeAngle(V1, V2)));
-				const float wAngle(EXP(SQUARE(fAngle - fOptimAngle)* (fAngle < fOptimAngle ? sigmaAngleSmall : sigmaAngleLarge)));
+				const float wAngle(EXP(SQUARE(fAngle - fOptimAngle) * (fAngle < fOptimAngle ? sigmaAngleSmall : sigmaAngleLarge)));
 				const float footprint2(Footprint(cameras[view.second.cameraId], view.second, objPt.second.objPt));
 				const float fScaleRatio(footprint1 / footprint2);
 				float wScale;
@@ -112,7 +121,7 @@ bool SelectNeighborViews(const std::vector<Camera>& cameras,
 					wScale = 1.f;
 				else
 					wScale = SQUARE(fScaleRatio);
-				Score& score = scores[view.second.imageId];
+				Score& score = scores[imgIdx];
 				score.score += std::max(wAngle, 0.1f) * wScale * wROI;
 				score.avgScale += fScaleRatio;
 				score.avgAngle += fAngle;
@@ -130,23 +139,23 @@ bool SelectNeighborViews(const std::vector<Camera>& cameras,
 			
 			for (const auto& img : imgs)
 			{
-				const int& ID_B = img.second.imageId;
+				const int& ID_B = imgIdToImgIdx[img.second.imageId];
 				const Score& score = scores[ID_B];
 				if (score.points < 3)
 					continue;
-				CHECK(imgID != ID_B);
+				CHECK(imgIdToImgIdx[imgID] != ID_B);
 				// compute how well the matched features are spread out (image covered area)
 				const cv::Point2f boundsA(cameras.at(imgs.at(imgID).cameraId).width, cameras.at(imgs.at(imgID).cameraId).height);
-				const cv::Point2f boundsB(cameras.at(imgs.at(ID_B).cameraId).width, cameras.at(imgs.at(ID_B).cameraId).height);
+				const cv::Point2f boundsB(cameras.at(imgs.at(img.second.imageId).cameraId).width, cameras.at(imgs.at(img.second.imageId).cameraId).height);
 				for (const auto& idx : pointsID)
 				{
 					objPts.at(idx).tracks_imgId_imgPtId;
 					CHECK(objPts.at(idx).tracks_imgId_imgPtId.count(imgID));
-					if (objPts.at(idx).tracks_imgId_imgPtId.count(ID_B) == 0)
+					if (objPts.at(idx).tracks_imgId_imgPtId.count(img.second.imageId) == 0)
 						continue;
 					const cv::Point3_<dType>& point = objPts.at(idx).objPt;
 					cv::Point_<dType> ptA = cameras.at(imgs.at(imgID).cameraId).ptInView(imgs.at(imgID).worldPtInView(point));
-					cv::Point_<dType> ptB = cameras.at(imgs.at(ID_B).cameraId).ptInView(imgs.at(ID_B).worldPtInView(point));
+					cv::Point_<dType> ptB = cameras.at(imgs.at(img.second.imageId).cameraId).ptInView(imgs.at(img.second.imageId).worldPtInView(point));
 					//if (!imageData.camera.IsInside(ptA, boundsA) || !imageDataB.camera.IsInside(ptB, boundsB)) 
 					if (IsInside<dType>(ptA, boundsA) && IsInside<dType>(ptB, boundsB))
 					{
@@ -160,7 +169,7 @@ bool SelectNeighborViews(const std::vector<Camera>& cameras,
 				projs.clear();
 				// store image score
 				ViewScore neighbor;
-				neighbor.idx.ID = ID_B;
+				neighbor.idx.ID = img.second.imageId;
 				neighbor.idx.points = score.points;
 				neighbor.idx.scale = score.avgScale / score.points;
 				neighbor.idx.angle = score.avgAngle / score.points;
@@ -171,10 +180,10 @@ bool SelectNeighborViews(const std::vector<Camera>& cameras,
 			{
 				std::sort(neighbors.begin(), neighbors.end(), [](const auto& a, const auto& b) {return a.score > b.score; });
 				std::stringstream msg;
-				msg << "\nReference image " << imgID << " sees " << neighbors.size() << " views : ";
+				msg << "\nReference image " << imgIdToImgIdx[imgID] << " sees " << neighbors.size() << " views : ";
 				for (const auto&n: neighbors)
 				{
-					msg << n.idx.ID << "(" << n.idx.points << "," << n.idx.scale << ")  ";
+					msg << imgIdToImgIdx[n.idx.ID] << "(" << n.idx.points << "," << n.idx.scale << ")  ";
 				}
 				msg << "(" << nPoints << "  shared points)";
 				std::cout << msg.str() << std::endl;
