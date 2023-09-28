@@ -5,6 +5,7 @@ set workSfmSpace=D:\repo\mvs_mvg_bat\viewerout\sfm
 set workMvsSpace=D:\repo\mvs_mvg_bat\viewerout\mvs
 set workColmapSpace=D:\repo\mvs_mvg_bat\viewerout\colmap
 set workLmsSpace=D:\repo\mvs_mvg_bat\viewerout\landmarks
+set workNerfSpace=D:\repo\mvs_mvg_bat\viewerout\nerf
 set openMvgPath=D:\repo\openMVG\src\build-2019\installRelease\bin
 echo %piciturePath%
 echo %workSpace%
@@ -18,6 +19,7 @@ mkdir %workSfmSpace%
 mkdir %workLmsSpace% 
 mkdir %workMvsSpace% 
 mkdir %workColmapSpace% 
+mkdir %workNerfSpace% 
 
 echo "-1. prepare images"
 ::python.exe .\mp42jpg.py  %piciturePath%\8.mp4  2
@@ -61,14 +63,17 @@ echo "6. Incremental reconstruction(GLOBAL)  (INCREMENTAL)"
 %openMvgPath%\openMVG_main_SfM -i %workSfmSpace%\matches\sfm_data.json -m %workSfmSpace%\matches -o %workSfmSpace% -s INCREMENTAL        -M  %workSfmSpace%\matches\matches.f.bin  -f  NONE
 ::            openMVG_main_SfM -i D:\repo\mvs_mvg_bat\viewerout\sfm\matches\sfm_data.json -m D:\repo\mvs_mvg_bat\viewerout\sfm\matches -o D:\repo\mvs_mvg_bat\viewerout\sfm -s INCREMENTAL        -M  D:\repo\mvs_mvg_bat\viewerout\sfm\matches\matches.f.bin  -f  NONE
 
-echo "7. Export to openMVS"
-echo %openMvgPath%\openMVG_main_openMVG2openMVS -i %workSfmSpace%\sfm_data.bin -o %workMvsSpace%\scene.mvs -d %workMvsSpace%\images   
-%openMvgPath%\openMVG_main_openMVG2openMVS -i %workSfmSpace%\sfm_data.bin -o %workMvsSpace%\scene.mvs -d %workMvsSpace%\images   
+::echo "7. Export to openMVS"
+::echo %openMvgPath%\openMVG_main_openMVG2openMVS -i %workSfmSpace%\sfm_data.bin -o %workMvsSpace%\scene.mvs -d %workMvsSpace%\images   
+""%openMvgPath%\openMVG_main_openMVG2openMVS -i %workSfmSpace%\sfm_data.bin -o %workMvsSpace%\scene.mvs -d %workMvsSpace%\images   
 
 echo "7. Export to colmap"
 echo %openMvgPath%\openMVG_main_openMVG2Colmap -i %workSfmSpace%\sfm_data.bin -o %workColmapSpace%
 %openMvgPath%\openMVG_main_openMVG2Colmap -i %workSfmSpace%\sfm_data.bin -o %workColmapSpace%
 
+
+bin\ParseMVG.exe   %workSfmSpace%\sfm_data.bin
+copy %piciturePath%\*.jpg %workColmapSpace%
 
 exit
  

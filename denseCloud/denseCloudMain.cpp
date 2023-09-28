@@ -1,6 +1,7 @@
 #include <iostream>
 #include <set>
 #include <vector>
+#include <numeric>
 #include <fstream>
 #include <string> 
 #include <sstream> 
@@ -24,6 +25,86 @@
 #include "cereal/types/vector.hpp"
 #include "cereal/types/map.hpp"
 #include "cereal/types/tuple.hpp"
+#define IGL_RAY_TRI_EPSILON 0.000000001
+#define IGL_RAY_TRI_CROSS(dest,v1,v2) \
+          dest[0]=v1[1]*v2[2]-v1[2]*v2[1]; \
+          dest[1]=v1[2]*v2[0]-v1[0]*v2[2]; \
+          dest[2]=v1[0]*v2[1]-v1[1]*v2[0];
+#define IGL_RAY_TRI_DOT(v1,v2) (v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2])
+#define IGL_RAY_TRI_SUB(dest,v1,v2) \
+          dest[0]=v1[0]-v2[0]; \
+          dest[1]=v1[1]-v2[1]; \
+          dest[2]=v1[2]-v2[2]; 
+
+template<class Dtype = float>
+int intersect_triangle1(const Dtype* orig, const Dtype* dir,
+	const Dtype* vert0, const Dtype* vert1, const Dtype* vert2,
+	Dtype* t, Dtype* u, Dtype* v)
+{
+	Dtype edge1[3], edge2[3], tvec[3], pvec[3], qvec[3];
+	Dtype det, inv_det;
+
+	/* find vectors for two edges sharing vert0 */
+	IGL_RAY_TRI_SUB(edge1, vert1, vert0);
+	IGL_RAY_TRI_SUB(edge2, vert2, vert0);
+
+	/* begin calculating determinant - also used to calculate U parameter */
+	IGL_RAY_TRI_CROSS(pvec, dir, edge2);
+
+	/* if determinant is near zero, ray lies in plane of triangle */
+	det = IGL_RAY_TRI_DOT(edge1, pvec);
+
+	if (det > IGL_RAY_TRI_EPSILON)
+	{
+		/* calculate distance from vert0 to ray origin */
+		IGL_RAY_TRI_SUB(tvec, orig, vert0);
+
+		/* calculate U parameter and test bounds */
+		*u = IGL_RAY_TRI_DOT(tvec, pvec);
+		if (*u < 0.0 || *u > det)
+			return 0;
+
+		/* prepare to test V parameter */
+		IGL_RAY_TRI_CROSS(qvec, tvec, edge1);
+
+		/* calculate V parameter and test bounds */
+		*v = IGL_RAY_TRI_DOT(dir, qvec);
+		if (*v < 0.0 || *u + *v > det)
+			return 0;
+
+	}
+	else if (det < -IGL_RAY_TRI_EPSILON)
+	{
+		/* calculate distance from vert0 to ray origin */
+		IGL_RAY_TRI_SUB(tvec, orig, vert0);
+
+		/* calculate U parameter and test bounds */
+		*u = IGL_RAY_TRI_DOT(tvec, pvec);
+		/*      printf("*u=%f\n",(float)*u); */
+		/*      printf("det=%f\n",det); */
+		if (*u > 0.0 || *u < det)
+			return 0;
+
+		/* prepare to test V parameter */
+		IGL_RAY_TRI_CROSS(qvec, tvec, edge1);
+
+		/* calculate V parameter and test bounds */
+		*v = IGL_RAY_TRI_DOT(dir, qvec);
+		if (*v > 0.0 || *u + *v < det)
+			return 0;
+	}
+	else return 0;  /* ray is parallel to the plane of the triangle */
+
+
+	inv_det = 1.0 / det;
+
+	/* calculate t, ray intersects triangle */
+	*t = IGL_RAY_TRI_DOT(edge2, qvec) * inv_det;
+	(*u) *= inv_det;
+	(*v) *= inv_det;
+
+	return 1;
+}
 std::vector<cv::Point3i>mediaPipeFaces = { {17, 18, 313}, {17, 18, 83}, {38, 81, 82}, {13, 38, 82}, {8, 9, 285}, {8, 9, 55}, {248, 281, 456}, 
 	{248, 419, 456}, {2, 97, 167}, {2, 164, 167}, {271, 303, 304}, {271, 302, 303}, {69, 104, 105}, {67, 69, 104}, {253, 449, 450}, 
 	{252, 253, 450}, {41, 42, 81}, {41, 42, 74}, {16, 17, 315}, {15, 16, 315}, {40, 73, 74}, {41, 73, 74}, {339, 373, 390}, {254, 339, 373},
@@ -211,6 +292,21 @@ std::vector<cv::Point_<dType>> getFlowImgPts(const std::vector<cv::Point_<dType>
 	}
 	return flowImgPts;
 }
+template<typename Dtype>
+inline int writeObj(const std::string& path, const std::vector<cv::Point3_<Dtype>>& pts, const std::vector<cv::Point3i>& faces)
+{
+	std::fstream fout(path, std::ios::out);
+	for (int i = 0; i < pts.size(); i++)
+	{
+		fout << "v " << pts[i].x << " " << pts[i].y << " " << pts[i].z << std::endl;
+	}
+	for (int i = 0; i < faces.size(); i++)
+	{
+		fout << "f " << faces[i].x + 1 << " " << faces[i].y + 1 << " " << faces[i].z + 1 << std::endl;
+	}
+	fout.close();
+	return 0;
+}
 struct Pt3d_MeshId
 {
 	std::map<int, int>pt3d_MeshId;
@@ -248,7 +344,8 @@ int main(int argc, char** argv)
 	std::vector<Camera>cameras = Camera::readCameras(cameraTXT);
 	std::map<int, ImageData>imgs = ImageData::readImageData(imagesTXT);
 	std::map<int, Point3dData>objPts = Point3dData::readPoint3dData(points3DTXT);
-	std::map<int, int>objPtsLandmarkdId;
+	std::map<int, int>objPtsToLandmarkdId;
+	std::map<int, int>landmarkdIdToObjPts;
 
 	std::string pt3dMeshIdPath = colmapDir + "../sfm/pt3dMeshId.json";
 	Pt3d_MeshId pt3dMeshId;
@@ -306,14 +403,180 @@ int main(int argc, char** argv)
 	{
 		for (const auto&d: objPts)
 		{
-			CHECK(pt3dMeshId.pt3d_MeshId.count(d.first)!=0);
-			objPtsLandmarkdId[d.first] = pt3dMeshId.pt3d_MeshId[d.first];
+			const int& objPtId = d.first;
+			CHECK(pt3dMeshId.pt3d_MeshId.count(objPtId)!=0);
+			const int&landmarkId = pt3dMeshId.pt3d_MeshId[objPtId];
+			objPtsToLandmarkdId[objPtId] = landmarkId;
+			landmarkdIdToObjPts[landmarkId] = objPtId;
 		}
-		CHECK(objPts.size()== objPtsLandmarkdId.size());
+		CHECK(objPts.size()== objPtsToLandmarkdId.size());
 	}
 	catch (const std::exception&)
 	{
+		return EXIT_FAILURE;
+	}
 
+
+	std::map<int, int>meshPtsMapToLandmarkdId;
+	std::map<int, int>landmarkdIdMapToMeshPts;
+	std::vector<cv::Point3_<dType>> meshPts;
+	std::vector<cv::Point3i> meshFace;
+	{			
+		for (int f = 0; f < mediaPipeFaces.size(); f++)
+		{
+			const int& pa = mediaPipeFaces[f].x;
+			const int& pb = mediaPipeFaces[f].y;
+			const int& pc = mediaPipeFaces[f].z;
+			if (landmarkdIdToObjPts.count(pa)!=0
+				&& landmarkdIdToObjPts.count(pb) != 0
+				&& landmarkdIdToObjPts.count(pc)!=0)
+			{
+				const int& objPaId = landmarkdIdToObjPts[pa];
+				const int& objPbId = landmarkdIdToObjPts[pb];
+				const int& objPcId = landmarkdIdToObjPts[pc];
+				int meshPtsMapSize = landmarkdIdMapToMeshPts.size();
+				if (landmarkdIdMapToMeshPts.count(objPaId) == 0)
+				{
+					landmarkdIdMapToMeshPts[objPaId] = meshPtsMapSize++;
+					meshPts.emplace_back(objPts[objPaId].objPt);
+				}
+				if (landmarkdIdMapToMeshPts.count(objPbId) == 0)
+				{
+					landmarkdIdMapToMeshPts[objPbId] = meshPtsMapSize++;
+					meshPts.emplace_back(objPts[objPbId].objPt);
+				}
+				if (landmarkdIdMapToMeshPts.count(objPcId) == 0)
+				{
+					landmarkdIdMapToMeshPts[objPcId] = meshPtsMapSize++;
+					meshPts.emplace_back(objPts[objPcId].objPt);
+				}
+				meshFace.emplace_back(landmarkdIdMapToMeshPts[objPaId], landmarkdIdMapToMeshPts[objPbId], landmarkdIdMapToMeshPts[objPcId]);
+			}
+		}
+		writeObj("mvg.obj", meshPts, meshFace);
+		for (auto&d: landmarkdIdMapToMeshPts)
+		{
+			meshPtsMapToLandmarkdId[d.second] = d.first;
+		}
+	}
+	std::vector<std::vector<dType>>sigmas(meshPts.size());
+	std::map<int, std::vector<bool>>landmarkVisiables;
+	for (const auto&img: imgs)
+	{
+		const int& imgId = img.first;
+		std::string imgPath = colmapDir +"/" + img.second.imgPath;
+		LOG(INFO) << "imgId=" << imgId << " : " << imgPath;
+		const int& cameraId = img.second.cameraId;
+		cv::Mat pic = cv::imread(imgPath);
+		Eigen::Matrix<dType, 3, 1>  thisCameraT = img.second.camera_t;
+
+		std::vector<bool> landmarkVisiable(meshPts.size(),false);
+#pragma omp parallel for
+		for (int landmarkIdx = 0; landmarkIdx < meshPts.size(); landmarkIdx++)
+		{
+			cv::Point3_<dType> landmarkDir= meshPts[landmarkIdx]- cv::Point3_<dType>(thisCameraT[0], thisCameraT[1], thisCameraT[2]);
+			dType landmarkDist = cv::norm(landmarkDir);
+			landmarkDir /= landmarkDist;
+			dType minDist = -1;
+			for (size_t f = 0; f < meshFace.size(); f++)
+			{
+				const int& pa = meshFace[f].x;
+				const int& pb = meshFace[f].y;
+				const int& pc = meshFace[f].z;
+				dType t = -1; dType u = -1; dType v = -1;
+				int hit = intersect_triangle1(&thisCameraT[0], &landmarkDir.x,
+					&meshPts[pa].x, &meshPts[pb].x, &meshPts[pc].x,
+					&t, &u, &v);
+				if (minDist<0)
+				{
+					minDist = t;
+				}
+				if (hit=0 && t< minDist&&t>0)
+				{
+					minDist = t;
+				}
+			}
+			if (minDist<0)//not hit
+			{
+				landmarkVisiable[landmarkIdx] = false;
+			}
+			else
+			{
+				if (minDist - landmarkDist>1e-4)
+				{
+					landmarkVisiable[landmarkIdx] = false;
+				}
+				else
+				{
+					landmarkVisiable[landmarkIdx] = true;
+				}
+			}			
+		}
+#pragma omp parallel for
+		for (int meshPtsIdx = 0; meshPtsIdx < meshPts.size(); meshPtsIdx++)
+		{
+			if (landmarkVisiable[meshPtsIdx])
+			{
+				const int& objPtId = landmarkdIdToObjPts[meshPtsMapToLandmarkdId[meshPtsIdx]];
+				const auto& objPt = objPts[objPtId].objPt;
+				const auto& iter = std::find(img.second.thisObjPtsIdx.begin(), img.second.thisObjPtsIdx.end(), objPtId);
+				if (img.second.thisObjPtsIdx.end() != iter)
+				{
+					cv::Point_<dType> imgPt = img.second.thisImgPts[iter- img.second.thisObjPtsIdx.begin()];
+					cv::Point_<dType> ptReproj = cameras.at(imgs.at(img.second.imageId).cameraId).ptInView(imgs.at(img.second.imageId).worldPtInView(objPt)); 
+					dType thisPtSigma = cv::norm(imgPt- ptReproj);
+					sigmas[meshPtsIdx].emplace_back(thisPtSigma);
+				} 
+			}
+		} 
+		landmarkVisiables[imgId] = landmarkVisiable;
+	}
+
+	std::vector<dType>sigma(meshPts.size());
+#pragma omp parallel for
+	for (int i = 0; i < meshPts.size(); i++)
+	{
+		sigma[i] = std::accumulate(sigmas[i].begin(), sigmas[i].end(), 0.)/ sigmas[i].size();
+	}
+	for (const auto& img : imgs)
+	{
+		const int& imgId = img.first;
+		std::string imgPath = colmapDir + "/" + img.second.imgPath;
+		const int& cameraId = img.second.cameraId;
+		const int& imgHeight = cameras[cameraId].height;
+		const int& imgWidth = cameras[cameraId].width;
+		cv::Mat mask = cv::Mat::zeros(imgHeight, imgWidth, CV_8UC1);
+		for (int f = 0; f < meshFace.size(); f++)
+		{
+			const int& pa = meshFace[f].x;
+			const int& pb = meshFace[f].y;
+			const int& pc = meshFace[f].z;
+			if (landmarkVisiables[imgId][pa] && landmarkVisiables[imgId][pb] && landmarkVisiables[imgId][pc])
+			{
+				const int& objPtAId = landmarkdIdToObjPts[meshPtsMapToLandmarkdId[pa]]; 
+				const auto& iterA = std::find(img.second.thisObjPtsIdx.begin(), img.second.thisObjPtsIdx.end(), objPtAId);
+				const int& objPtBId = landmarkdIdToObjPts[meshPtsMapToLandmarkdId[pb]];
+				const auto& iterB = std::find(img.second.thisObjPtsIdx.begin(), img.second.thisObjPtsIdx.end(), objPtBId);
+				const int& objPtCId = landmarkdIdToObjPts[meshPtsMapToLandmarkdId[pc]]; 
+				const auto& iterC = std::find(img.second.thisObjPtsIdx.begin(), img.second.thisObjPtsIdx.end(), objPtCId);
+
+				if (iterA!= img.second.thisObjPtsIdx.end()
+					&& iterB != img.second.thisObjPtsIdx.end()
+					&& iterC != img.second.thisObjPtsIdx.end())
+				{
+					cv::Point_<dType> imgPtA = img.second.thisImgPts[iterA - img.second.thisObjPtsIdx.begin()];
+					cv::Point_<dType> imgPtB = img.second.thisImgPts[iterB - img.second.thisObjPtsIdx.begin()];
+					cv::Point_<dType> imgPtC = img.second.thisImgPts[iterC - img.second.thisObjPtsIdx.begin()];
+					std::vector<cv::Point>trianglePts{ cv::Point(imgPtA) ,cv::Point(imgPtB) ,cv::Point(imgPtC) };
+					cv::fillPoly(mask, trianglePts, cv::Scalar(255), -1);
+						 
+				}
+				else
+				{
+					LOG(INFO) << "shouldnt be here.";
+				}				
+			}
+		}
 	}
 	SelectNeighborViews(cameras, imgs, objPts);
 
