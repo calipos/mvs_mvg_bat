@@ -316,21 +316,50 @@ struct Pt3d_MeshId
 		ar(cereal::make_nvp("pt3d_MeshId", pt3d_MeshId));
 	}
 };
-void test_aff()
+struct Ray
 {
-	cv::Mat mask = cv::Mat::zeros(960,540,CV_8UC1);
-	cv::Mat rgb = cv::Mat::zeros(960, 540, CV_8UC3);
-	std::vector<cv::Point_<int>>trianglePts{
-					cv::Point_<int>(90, 90),
-					cv::Point_<int>(30, 60),
-					cv::Point_<int>(60, 30) };
-
-	cv::drawContours(mask, std::vector<std::vector<cv::Point_<int>>>{ trianglePts }, 0, cv::Scalar(255), -1);
-	return;
-}
+	Ray() {};
+	Ray(const dType& dirX, const dType& dirY, const dType& dirZ,
+		const dType& R, const dType& G, const dType& B, const dType& sigma_)
+	{
+		dir = std::vector< dType  >{ dirX ,dirY ,dirZ };
+		RGB = std::vector< dType  >{ R,G,B };
+		sigma = sigma_;
+	};
+	std::vector< dType  > dir;
+	std::vector< dType  > RGB;
+	dType sigma;
+	template <class Archive>
+	void serialize(Archive& ar)
+	{
+		ar(cereal::make_nvp("dir", dir));
+		ar(cereal::make_nvp("RGB", RGB));
+		ar(cereal::make_nvp("sigma", sigma));
+	}
+};
+struct View
+{
+	dType fx,fy,cx,cy;
+	dType height,width;
+	std::vector< dType  >worldToCamera;
+	std::vector< dType  > cameraT;
+	std::vector< Ray  >rays;
+	template <class Archive>
+	void serialize(Archive& ar)
+	{
+		ar(cereal::make_nvp("fx", fx));
+		ar(cereal::make_nvp("fy", fy));
+		ar(cereal::make_nvp("cx", cx));
+		ar(cereal::make_nvp("cy", cy));
+		ar(cereal::make_nvp("height", height));
+		ar(cereal::make_nvp("width", width));
+		ar(cereal::make_nvp("worldToCamera", worldToCamera));
+		ar(cereal::make_nvp("cameraT", cameraT)); 
+		ar(cereal::make_nvp("rays", rays));
+	}
+};
 int main(int argc, char** argv)
-{
-	test_aff();
+{ 
 	if (argc != 2)
 	{
 		std::cout << "cmd colmapDir" << std::endl;
@@ -509,13 +538,14 @@ int main(int argc, char** argv)
 	{
 		const int& imgId = img.first;
 		std::string imgPath = colmapDir + "/" + img.second.imgPath;
+		cv::Mat rgb = cv::imread(imgPath);
 		const int& cameraId = img.second.cameraId;
 		const int& imgHeight = cameras[cameraId].height;
 		const int& imgWidth = cameras[cameraId].width;
 		cv::Mat mask = cv::Mat::zeros(imgHeight, imgWidth, CV_8UC1);
 		cv::Mat pixelMesh = cv::Mat::ones(imgHeight, imgWidth, CV_32SC1) * -1;
-		cv::Mat pixelDist = cv::Mat::zeros(imgHeight, imgWidth, CV_32FC1);
-		cv::Mat pixelSigma = cv::Mat::zeros(imgHeight, imgWidth, CV_32FC1);
+		cv::Mat pixelDist = cv::Mat::zeros(imgHeight, imgWidth, cv::DataType<dType>::type);
+		cv::Mat pixelSigma = cv::Mat::zeros(imgHeight, imgWidth, cv::DataType<dType>::type);
 		for (int f = 0; f < meshFace.size(); f++)
 		{
 			const int& pa = meshFace[f].x;
@@ -544,7 +574,7 @@ int main(int argc, char** argv)
 				cv::drawContours(mask, std::vector<std::vector<cv::Point>>{ trianglePts }, 0, cv::Scalar(255), -1);
 				cv::Rect bbos = cv::boundingRect(trianglePts);
 				cv::Mat local = cv::Mat::zeros(bbos.height, bbos.width, CV_8UC1);
-				cv::Mat localDepth = cv::Mat::zeros(bbos.height, bbos.width, CV_32FC1);
+				cv::Mat localDepth = cv::Mat::zeros(bbos.height, bbos.width, cv::DataType<dType>::type);
 				for (auto&d: trianglePts)
 				{
 					d.x -= bbos.x;
@@ -586,14 +616,14 @@ int main(int argc, char** argv)
 								w1/=denom;
 								w2 = 1 - w0 - w1;
 							}
-							localDepth.ptr<float>(r_)[c_] = w0 * cameraPtA.z + w1 * cameraPtB.z + w2 * cameraPtC.z;
+							localDepth.ptr<dType>(r_)[c_] = w0 * cameraPtA.z + w1 * cameraPtB.z + w2 * cameraPtC.z;
 							dType theSigma = w0 * sigmaA + w1 * sigmaB + w2 * sigmaC;
 							bool a1 = pixelMesh.ptr<int>(trueR)[trueC] >= 0;
-							bool a2 = pixelDist.ptr<float>(trueR)[trueC] < localDepth.ptr<float>(r_)[c_];
+							bool a2 = pixelDist.ptr<dType>(trueR)[trueC] < localDepth.ptr<dType>(r_)[c_];
 							if (!(a1 && a2))
 							{
-								pixelDist.ptr<float>(trueR)[trueC] = localDepth.ptr<float>(r_)[c_];
-								pixelSigma.ptr<float>(trueR)[trueC] = theSigma;
+								pixelDist.ptr<dType>(trueR)[trueC] = localDepth.ptr<dType>(r_)[c_];
+								pixelSigma.ptr<dType>(trueR)[trueC] = theSigma;
 								pixelMesh.ptr<int>(trueR)[trueC] = f;
 							} 
 						}
@@ -601,7 +631,63 @@ int main(int argc, char** argv)
 				}
 			}
 		}
-		LOG(INFO);
+
+		View thisViewData;
+		thisViewData.fx = cameras.at(imgs.at(img.second.imageId).cameraId).focalLength;
+		thisViewData.fy = cameras.at(imgs.at(img.second.imageId).cameraId).focalLength;
+		thisViewData.cx = cameras.at(imgs.at(img.second.imageId).cameraId).cx;
+		thisViewData.cy = cameras.at(imgs.at(img.second.imageId).cameraId).cy;
+		thisViewData.height = cameras.at(imgs.at(img.second.imageId).cameraId).height;
+		thisViewData.width = cameras.at(imgs.at(img.second.imageId).cameraId).width;
+		const auto& worldToCamera = imgs.at(img.second.imageId).worldToCamera;
+		thisViewData.worldToCamera = std::vector<dType>{
+			worldToCamera.ptr<dType>(0)[0] ,worldToCamera.ptr<dType>(0)[1] ,worldToCamera.ptr<dType>(0)[2] ,worldToCamera.ptr<dType>(0)[3] ,
+			worldToCamera.ptr<dType>(1)[0] ,worldToCamera.ptr<dType>(1)[1] ,worldToCamera.ptr<dType>(1)[2] ,worldToCamera.ptr<dType>(1)[3] ,
+			worldToCamera.ptr<dType>(2)[0] ,worldToCamera.ptr<dType>(2)[1] ,worldToCamera.ptr<dType>(2)[2] ,worldToCamera.ptr<dType>(2)[3] ,
+		};
+		thisViewData.cameraT= std::vector<dType>{
+			imgs.at(img.second.imageId).camera_t[0] ,imgs.at(img.second.imageId).camera_t[1] ,imgs.at(img.second.imageId).camera_t[2] }; 
+		cv::Mat cameraToWorld = cv::Mat::eye(3,3,cv::DataType<dType>::type);
+		worldToCamera(cv::Rect(0, 0, 3, 3)).copyTo(cameraToWorld(cv::Rect(0,0,3,3)));
+		cameraToWorld = cameraToWorld.t();
+		thisViewData.rays.reserve(20480);
+		for (int r_ = 0; r_ < pixelMesh.rows; r_++)
+		{
+			for (int c_ = 0; c_ < pixelMesh.cols; c_++)
+			{
+				if (pixelMesh.ptr<int>(r_)[c_] >= 0)
+				{
+					cv::Mat dirMat = cv::Mat::eye(3, 1, cv::DataType<dType>::type);
+					dirMat.ptr<dType>(0)[0] = (c_ - thisViewData.cx) / thisViewData.fx;
+					dirMat.ptr<dType>(1)[0] = (r_ - thisViewData.cy) / thisViewData.fy;
+					dirMat.ptr<dType>(2)[0] = 1; 
+					dirMat /= cv::norm(dirMat);
+					cv::Mat worldDir = cameraToWorld * dirMat;
+					const auto& thisSigma = pixelSigma.ptr<dType>(r_)[c_];
+					dType R = rgb.at<cv::Vec3b>(r_, c_)[2] * 0.00390625;
+					dType G = rgb.at<cv::Vec3b>(r_, c_)[1] * 0.00390625;
+					dType B = rgb.at<cv::Vec3b>(r_, c_)[0] * 0.00390625;
+					thisViewData.rays.emplace_back(dirMat.ptr<dType>(0)[0], dirMat.ptr<dType>(1)[0], dirMat.ptr<dType>(2)[0], R, G, B, thisSigma);
+				}
+			}
+		}
+		
+		std::stringstream ss;
+		{
+			cereal::JSONOutputArchive archive(ss);
+			archive(cereal::make_nvp("fx", thisViewData.fx));
+			archive(cereal::make_nvp("fy", thisViewData.fy));
+			archive(cereal::make_nvp("cx", thisViewData.cx));
+			archive(cereal::make_nvp("cy", thisViewData.cy));
+			archive(cereal::make_nvp("height", thisViewData.height));
+			archive(cereal::make_nvp("width", thisViewData.width));
+			archive(cereal::make_nvp("worldToCamera", thisViewData.worldToCamera));
+			archive(cereal::make_nvp("cameraT", thisViewData.cameraT));
+			archive(cereal::make_nvp("rays", thisViewData.rays));
+		} 
+		std::fstream fout(imgPath+".rays.json", std::ios::out);
+		fout << ss.str() << std::endl;
+		fout.close();
 	}
 	SelectNeighborViews(cameras, imgs, objPts);
 
