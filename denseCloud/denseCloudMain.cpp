@@ -316,8 +316,21 @@ struct Pt3d_MeshId
 		ar(cereal::make_nvp("pt3d_MeshId", pt3d_MeshId));
 	}
 };
+void test_aff()
+{
+	cv::Mat mask = cv::Mat::zeros(960,540,CV_8UC1);
+	cv::Mat rgb = cv::Mat::zeros(960, 540, CV_8UC3);
+	std::vector<cv::Point_<int>>trianglePts{
+					cv::Point_<int>(90, 90),
+					cv::Point_<int>(30, 60),
+					cv::Point_<int>(60, 30) };
+
+	cv::drawContours(mask, std::vector<std::vector<cv::Point_<int>>>{ trianglePts }, 0, cv::Scalar(255), -1);
+	return;
+}
 int main(int argc, char** argv)
 {
+	test_aff();
 	if (argc != 2)
 	{
 		std::cout << "cmd colmapDir" << std::endl;
@@ -417,8 +430,8 @@ int main(int argc, char** argv)
 	}
 
 
-	std::map<int, int>meshPtsMapToLandmarkdId;
-	std::map<int, int>landmarkdIdMapToMeshPts;
+	std::map<int, int>meshPtsMapToObjId;
+	std::map<int, int>objIdMapToMeshPts;
 	std::vector<cv::Point3_<dType>> meshPts;
 	std::vector<cv::Point3i> meshFace;
 	{			
@@ -434,33 +447,32 @@ int main(int argc, char** argv)
 				const int& objPaId = landmarkdIdToObjPts[pa];
 				const int& objPbId = landmarkdIdToObjPts[pb];
 				const int& objPcId = landmarkdIdToObjPts[pc];
-				int meshPtsMapSize = landmarkdIdMapToMeshPts.size();
-				if (landmarkdIdMapToMeshPts.count(objPaId) == 0)
+				int meshPtsMapSize = objIdMapToMeshPts.size();
+				if (objIdMapToMeshPts.count(objPaId) == 0)
 				{
-					landmarkdIdMapToMeshPts[objPaId] = meshPtsMapSize++;
+					objIdMapToMeshPts[objPaId] = meshPtsMapSize++;
 					meshPts.emplace_back(objPts[objPaId].objPt);
 				}
-				if (landmarkdIdMapToMeshPts.count(objPbId) == 0)
+				if (objIdMapToMeshPts.count(objPbId) == 0)
 				{
-					landmarkdIdMapToMeshPts[objPbId] = meshPtsMapSize++;
+					objIdMapToMeshPts[objPbId] = meshPtsMapSize++;
 					meshPts.emplace_back(objPts[objPbId].objPt);
 				}
-				if (landmarkdIdMapToMeshPts.count(objPcId) == 0)
+				if (objIdMapToMeshPts.count(objPcId) == 0)
 				{
-					landmarkdIdMapToMeshPts[objPcId] = meshPtsMapSize++;
+					objIdMapToMeshPts[objPcId] = meshPtsMapSize++;
 					meshPts.emplace_back(objPts[objPcId].objPt);
 				}
-				meshFace.emplace_back(landmarkdIdMapToMeshPts[objPaId], landmarkdIdMapToMeshPts[objPbId], landmarkdIdMapToMeshPts[objPcId]);
+				meshFace.emplace_back(objIdMapToMeshPts[objPaId], objIdMapToMeshPts[objPbId], objIdMapToMeshPts[objPcId]);
 			}
 		}
 		writeObj("mvg.obj", meshPts, meshFace);
-		for (auto&d: landmarkdIdMapToMeshPts)
+		for (auto&d: objIdMapToMeshPts)
 		{
-			meshPtsMapToLandmarkdId[d.second] = d.first;
+			meshPtsMapToObjId[d.second] = d.first;
 		}
 	}
 	std::vector<std::vector<dType>>sigmas(meshPts.size());
-	std::map<int, std::vector<bool>>landmarkVisiables;
 	for (const auto&img: imgs)
 	{
 		const int& imgId = img.first;
@@ -470,66 +482,21 @@ int main(int argc, char** argv)
 		cv::Mat pic = cv::imread(imgPath);
 		Eigen::Matrix<dType, 3, 1>  thisCameraT = img.second.camera_t;
 
-		std::vector<bool> landmarkVisiable(meshPts.size(),false);
-#pragma omp parallel for
-		for (int landmarkIdx = 0; landmarkIdx < meshPts.size(); landmarkIdx++)
-		{
-			cv::Point3_<dType> landmarkDir= meshPts[landmarkIdx]- cv::Point3_<dType>(thisCameraT[0], thisCameraT[1], thisCameraT[2]);
-			dType landmarkDist = cv::norm(landmarkDir);
-			landmarkDir /= landmarkDist;
-			dType minDist = -1;
-			for (size_t f = 0; f < meshFace.size(); f++)
-			{
-				const int& pa = meshFace[f].x;
-				const int& pb = meshFace[f].y;
-				const int& pc = meshFace[f].z;
-				dType t = -1; dType u = -1; dType v = -1;
-				int hit = intersect_triangle1(&thisCameraT[0], &landmarkDir.x,
-					&meshPts[pa].x, &meshPts[pb].x, &meshPts[pc].x,
-					&t, &u, &v);
-				if (minDist<0)
-				{
-					minDist = t;
-				}
-				if (hit=0 && t< minDist&&t>0)
-				{
-					minDist = t;
-				}
-			}
-			if (minDist<0)//not hit
-			{
-				landmarkVisiable[landmarkIdx] = false;
-			}
-			else
-			{
-				if (minDist - landmarkDist>1e-4)
-				{
-					landmarkVisiable[landmarkIdx] = false;
-				}
-				else
-				{
-					landmarkVisiable[landmarkIdx] = true;
-				}
-			}			
-		}
+
 #pragma omp parallel for
 		for (int meshPtsIdx = 0; meshPtsIdx < meshPts.size(); meshPtsIdx++)
 		{
-			if (landmarkVisiable[meshPtsIdx])
+			const int& objPtId = landmarkdIdToObjPts[meshPtsMapToObjId[meshPtsIdx]];
+			const auto& objPt = objPts[objPtId].objPt;
+			const auto& iter = std::find(img.second.thisObjPtsIdx.begin(), img.second.thisObjPtsIdx.end(), objPtId);
+			if (img.second.thisObjPtsIdx.end() != iter)
 			{
-				const int& objPtId = landmarkdIdToObjPts[meshPtsMapToLandmarkdId[meshPtsIdx]];
-				const auto& objPt = objPts[objPtId].objPt;
-				const auto& iter = std::find(img.second.thisObjPtsIdx.begin(), img.second.thisObjPtsIdx.end(), objPtId);
-				if (img.second.thisObjPtsIdx.end() != iter)
-				{
-					cv::Point_<dType> imgPt = img.second.thisImgPts[iter- img.second.thisObjPtsIdx.begin()];
-					cv::Point_<dType> ptReproj = cameras.at(imgs.at(img.second.imageId).cameraId).ptInView(imgs.at(img.second.imageId).worldPtInView(objPt)); 
-					dType thisPtSigma = cv::norm(imgPt- ptReproj);
-					sigmas[meshPtsIdx].emplace_back(thisPtSigma);
-				} 
-			}
+				cv::Point_<dType> imgPt = img.second.thisImgPts[iter- img.second.thisObjPtsIdx.begin()];
+				cv::Point_<dType> ptReproj = cameras.at(imgs.at(img.second.imageId).cameraId).ptInView(imgs.at(img.second.imageId).worldPtInView(objPt)); 
+				dType thisPtSigma = cv::norm(imgPt- ptReproj);
+				sigmas[meshPtsIdx].emplace_back(thisPtSigma);
+			} 
 		} 
-		landmarkVisiables[imgId] = landmarkVisiable;
 	}
 
 	std::vector<dType>sigma(meshPts.size());
@@ -546,37 +513,95 @@ int main(int argc, char** argv)
 		const int& imgHeight = cameras[cameraId].height;
 		const int& imgWidth = cameras[cameraId].width;
 		cv::Mat mask = cv::Mat::zeros(imgHeight, imgWidth, CV_8UC1);
+		cv::Mat pixelMesh = cv::Mat::ones(imgHeight, imgWidth, CV_32SC1) * -1;
+		cv::Mat pixelDist = cv::Mat::zeros(imgHeight, imgWidth, CV_32FC1);
+		cv::Mat pixelSigma = cv::Mat::zeros(imgHeight, imgWidth, CV_32FC1);
 		for (int f = 0; f < meshFace.size(); f++)
 		{
 			const int& pa = meshFace[f].x;
 			const int& pb = meshFace[f].y;
 			const int& pc = meshFace[f].z;
-			if (landmarkVisiables[imgId][pa] && landmarkVisiables[imgId][pb] && landmarkVisiables[imgId][pc])
+			//if (landmarkVisiables[imgId][pa] && landmarkVisiables[imgId][pb] && landmarkVisiables[imgId][pc])
 			{
-				const int& objPtAId = landmarkdIdToObjPts[meshPtsMapToLandmarkdId[pa]]; 
+				const int& objPtAId = meshPtsMapToObjId[pa]; 
+				const int& objPtBId = meshPtsMapToObjId[pb];
+				const int& objPtCId = meshPtsMapToObjId[pc];
 				const auto& iterA = std::find(img.second.thisObjPtsIdx.begin(), img.second.thisObjPtsIdx.end(), objPtAId);
-				const int& objPtBId = landmarkdIdToObjPts[meshPtsMapToLandmarkdId[pb]];
 				const auto& iterB = std::find(img.second.thisObjPtsIdx.begin(), img.second.thisObjPtsIdx.end(), objPtBId);
-				const int& objPtCId = landmarkdIdToObjPts[meshPtsMapToLandmarkdId[pc]]; 
 				const auto& iterC = std::find(img.second.thisObjPtsIdx.begin(), img.second.thisObjPtsIdx.end(), objPtCId);
 
-				if (iterA!= img.second.thisObjPtsIdx.end()
-					&& iterB != img.second.thisObjPtsIdx.end()
-					&& iterC != img.second.thisObjPtsIdx.end())
+				cv::Point3_<dType> cameraPtA = imgs.at(img.second.imageId).worldPtInView(meshPts[pa]);
+				cv::Point3_<dType> cameraPtB = imgs.at(img.second.imageId).worldPtInView(meshPts[pb]);
+				cv::Point3_<dType> cameraPtC = imgs.at(img.second.imageId).worldPtInView(meshPts[pc]);
+				cv::Point_<dType> ptReprojA = cameras.at(imgs.at(img.second.imageId).cameraId).ptInView(cameraPtA);
+				cv::Point_<dType> ptReprojB = cameras.at(imgs.at(img.second.imageId).cameraId).ptInView(cameraPtB);
+				cv::Point_<dType> ptReprojC = cameras.at(imgs.at(img.second.imageId).cameraId).ptInView(cameraPtC);
+				const dType& sigmaA = sigma[pa];
+				const dType& sigmaB = sigma[pb];
+				const dType& sigmaC = sigma[pc];
+
+				std::vector<cv::Point>trianglePts{ cv::Point(ptReprojA) ,cv::Point(ptReprojB) ,cv::Point(ptReprojC) };
+				cv::drawContours(mask, std::vector<std::vector<cv::Point>>{ trianglePts }, 0, cv::Scalar(255), -1);
+				cv::Rect bbos = cv::boundingRect(trianglePts);
+				cv::Mat local = cv::Mat::zeros(bbos.height, bbos.width, CV_8UC1);
+				cv::Mat localDepth = cv::Mat::zeros(bbos.height, bbos.width, CV_32FC1);
+				for (auto&d: trianglePts)
 				{
-					cv::Point_<dType> imgPtA = img.second.thisImgPts[iterA - img.second.thisObjPtsIdx.begin()];
-					cv::Point_<dType> imgPtB = img.second.thisImgPts[iterB - img.second.thisObjPtsIdx.begin()];
-					cv::Point_<dType> imgPtC = img.second.thisImgPts[iterC - img.second.thisObjPtsIdx.begin()];
-					std::vector<cv::Point>trianglePts{ cv::Point(imgPtA) ,cv::Point(imgPtB) ,cv::Point(imgPtC) };
-					cv::fillPoly(mask, trianglePts, cv::Scalar(255), -1);
-						 
+					d.x -= bbos.x;
+					d.y -= bbos.y;
 				}
-				else
+				cv::drawContours(local, std::vector<std::vector<cv::Point>>{ trianglePts }, 0, cv::Scalar(255), -1);
+				dType y2_y3 = trianglePts[1].y - trianglePts[2].y;
+				dType x3_x2 = trianglePts[2].x - trianglePts[1].x;
+				dType x1_x3 = trianglePts[0].x - trianglePts[2].x;
+				dType y1_y3 = trianglePts[0].y - trianglePts[2].y;
+				dType y3_y1 = trianglePts[2].y - trianglePts[0].y;  
+				dType denom = y2_y3 * x1_x3 + x3_x2 * y1_y3;
+//#pragma omp parallel for
+				for (int r_ = 0; r_ < bbos.height; r_++)
 				{
-					LOG(INFO) << "shouldnt be here.";
-				}				
+					for (int c_ = 0; c_ < bbos.width; c_++)
+					{
+						if (local.ptr<uchar>(r_)[c_]>0)
+						{
+							int trueR = r_ + bbos.y;
+							int trueC = c_ + bbos.x;
+							if (trueR < 0 || trueC < 0 || trueR >= pixelMesh.rows || trueC >= pixelMesh.cols)
+							{
+								continue;
+							}
+							dType px_x3 = c_ - trianglePts[2].x;
+							dType py_y3 = r_ - trianglePts[2].y;
+							dType w0 = (y2_y3 * px_x3 + x3_x2 * py_y3) ;
+							dType w1 = (y3_y1 * px_x3 + x1_x3 * py_y3) ;
+							dType w2 = 1 - w0 - w1;
+							if (abs(denom)<1e-5)
+							{
+								w0 = 1. / 3;
+								w1 = w0; w2 = w0;
+							}
+							else
+							{
+								w0/=denom;
+								w1/=denom;
+								w2 = 1 - w0 - w1;
+							}
+							localDepth.ptr<float>(r_)[c_] = w0 * cameraPtA.z + w1 * cameraPtB.z + w2 * cameraPtC.z;
+							dType theSigma = w0 * sigmaA + w1 * sigmaB + w2 * sigmaC;
+							bool a1 = pixelMesh.ptr<int>(trueR)[trueC] >= 0;
+							bool a2 = pixelDist.ptr<float>(trueR)[trueC] < localDepth.ptr<float>(r_)[c_];
+							if (!(a1 && a2))
+							{
+								pixelDist.ptr<float>(trueR)[trueC] = localDepth.ptr<float>(r_)[c_];
+								pixelSigma.ptr<float>(trueR)[trueC] = theSigma;
+								pixelMesh.ptr<int>(trueR)[trueC] = f;
+							} 
+						}
+					}
+				}
 			}
 		}
+		LOG(INFO);
 	}
 	SelectNeighborViews(cameras, imgs, objPts);
 
