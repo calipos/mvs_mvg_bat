@@ -2,7 +2,6 @@ cmake_minimum_required (VERSION 2.8)
 
 # 项目信息
 project (GeneratePipeMediaFeature) 
-set(openMvgInstall D:/repo/openMVG/src/build-2019/install)
 
 
 add_executable(GeneratePipeMediaFeature generatePipeMediaFeature.cpp mesh.cpp) 

@@ -9,7 +9,13 @@ project (test)
 option(BUILD_SHARED_LIBS "option for shared" OFF)
 
 
+
+set(openMvgInstall D:/repo/openMVG/src/build-2019/install)
 set(thirdPart D:/ucl360/libraries2019) 
+ 
+
+
+
 ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/DlibLandmark)				# 先执行这个目录下的cmake
 ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/replaceOpenMvgFeature)					# 上个目录下生成库后，此时再链接生成可执行文件
 ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/denseCloud)				 

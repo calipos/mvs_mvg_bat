@@ -32,6 +32,8 @@ replaceOpenMvgFeature/build-vs2019/*
 *.pyc
 PersistentIndependentParticles/reference_model/*
 PersistentIndependentParticles/*.gif
+denseCloud/*.pb.cc
+denseCloud/*.pb.h
 build-2019-shared/*
 *.exe
 *.task

@@ -1,0 +1,64 @@
+//选择  proto2 或者 proto3 的语法，这里指定了 proto3 的语法
+syntax = "proto3";
+//包名，在 C++ 里表现为 namespace
+package nerf;
+//依赖的其他 proto 源文件，//在依赖的数据类型在其他 proto 源文件中定义的情况下，//需要通过 import 导入其他 proto 源文件
+//import "ray.proto";​
+message Point3d {
+  fixed64              x      =   1;
+  fixed64              y      =   2;
+  fixed64              z      =   3;
+}
+message Point3f {
+  fixed32              x      =   1;
+  fixed32              y      =   2;
+  fixed32              z      =   3;
+}
+message Matrix34d {
+  fixed64              _00      =   1;
+  fixed64              _01      =   2;
+  fixed64              _02      =   3;
+  fixed64              _03      =   4;
+  fixed64              _10      =   5;
+  fixed64              _11      =   6;
+  fixed64              _12      =   7;
+  fixed64              _13      =   8;
+  fixed64              _20      =   9;
+  fixed64              _21      =   10;
+  fixed64              _22      =   11;
+  fixed64              _23      =   12;
+}
+message Matrix34f {
+  fixed32              _00      =   1;
+  fixed32              _01      =   2;
+  fixed32              _02      =   3;
+  fixed32              _03      =   4;
+  fixed32              _10      =   5;
+  fixed32              _11      =   6;
+  fixed32              _12      =   7;
+  fixed32              _13      =   8;
+  fixed32              _20      =   9;
+  fixed32              _21      =   10;
+  fixed32              _22      =   11;
+  fixed32              _23      =   12;
+}
+message Ray {
+  Point3d              xyz      =   1;
+  Point3d              dir      =   2;
+  Point3d              RGB      =   3;
+  fixed64              dist      =   4;
+  fixed64              sigma      =   5;
+}
+
+message Test {
+//数据类型            字段          field-number (还是用英文原文好一点)
+  fixed64               fx               =   1;
+  fixed64               fy               =   2;
+  fixed64               cx               =   3;
+  fixed64               cy               =   4;
+  int32                 height           =   5;
+  int32                 width            =   6;
+  Matrix34d             worldToCamera    =   7;
+  Point3d               cameraT          =   8;
+  repeated Ray          rays             =   9;
+}

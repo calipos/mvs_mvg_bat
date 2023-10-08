@@ -25,6 +25,8 @@
 #include "cereal/types/vector.hpp"
 #include "cereal/types/map.hpp"
 #include "cereal/types/tuple.hpp"
+#include "serialization.h"
+#include "view.pb.h" 
 #define IGL_RAY_TRI_EPSILON 0.000000001
 #define IGL_RAY_TRI_CROSS(dest,v1,v2) \
           dest[0]=v1[1]*v2[2]-v1[2]*v2[1]; \
@@ -319,28 +321,45 @@ struct Pt3d_MeshId
 struct Ray
 {
 	Ray() {};
-	Ray(const dType& dirX, const dType& dirY, const dType& dirZ,
-		const dType& R, const dType& G, const dType& B, const dType& sigma_)
+	Ray(const dType& x, const dType& y, const dType& z,
+		const dType& dirX, const dType& dirY, const dType& dirZ,
+		const dType& R, const dType& G, const dType& B, 
+		const dType& dist_, const dType& sigma_)
 	{
+		xyz = std::vector< dType  >{ x ,y ,z };
 		dir = std::vector< dType  >{ dirX ,dirY ,dirZ };
 		RGB = std::vector< dType  >{ R,G,B };
+		dist = dist_;
 		sigma = sigma_;
 	};
+	std::vector< dType  > xyz;
 	std::vector< dType  > dir;
 	std::vector< dType  > RGB;
+	dType dist;
 	dType sigma;
 	template <class Archive>
 	void serialize(Archive& ar)
 	{
+		ar(cereal::make_nvp("xyz", xyz));
 		ar(cereal::make_nvp("dir", dir));
 		ar(cereal::make_nvp("RGB", RGB));
+		ar(cereal::make_nvp("dist", dist));
 		ar(cereal::make_nvp("sigma", sigma));
 	}
+	template<class Archive>
+	void serialize(Archive& ar, const unsigned int version)
+	{
+		ar& xyz;
+		ar& dir;
+		ar& RGB;
+		ar& dist;
+		ar& sigma; 
+	};
 };
 struct View
 {
 	dType fx,fy,cx,cy;
-	dType height,width;
+	int height,width;
 	std::vector< dType  >worldToCamera;
 	std::vector< dType  > cameraT;
 	std::vector< Ray  >rays;
@@ -357,6 +376,19 @@ struct View
 		ar(cereal::make_nvp("cameraT", cameraT)); 
 		ar(cereal::make_nvp("rays", rays));
 	}
+	template<class Archive>
+	void serialize(Archive& ar, const unsigned int version)
+	{
+		ar& fx;
+		ar& fy;
+		ar& cx;
+		ar& cy;
+		ar& height;
+		ar& width;
+		ar& worldToCamera;
+		ar& cameraT;
+		ar& rays; 
+	};
 };
 int main(int argc, char** argv)
 { 
@@ -544,7 +576,9 @@ int main(int argc, char** argv)
 		const int& imgWidth = cameras[cameraId].width;
 		cv::Mat mask = cv::Mat::zeros(imgHeight, imgWidth, CV_8UC1);
 		cv::Mat pixelMesh = cv::Mat::ones(imgHeight, imgWidth, CV_32SC1) * -1;
+		cv::Mat pixelDepth = cv::Mat::zeros(imgHeight, imgWidth, cv::DataType<dType>::type);
 		cv::Mat pixelDist = cv::Mat::zeros(imgHeight, imgWidth, cv::DataType<dType>::type);
+		cv::Mat pixelXYZ = cv::Mat::zeros(imgHeight, imgWidth, CV_MAKETYPE(cv::DataType<dType>::depth, 3));
 		cv::Mat pixelSigma = cv::Mat::zeros(imgHeight, imgWidth, cv::DataType<dType>::type);
 		for (int f = 0; f < meshFace.size(); f++)
 		{
@@ -607,8 +641,35 @@ int main(int argc, char** argv)
 							dType w2 = 1 - w0 - w1;
 							if (abs(denom)<1e-5)
 							{
-								w0 = 1. / 3;
-								w1 = w0; w2 = w0;
+								int dist0 = (trianglePts[0].x - c_) * (trianglePts[0].x - c_) + (trianglePts[0].y - r_) * (trianglePts[0].y - r_);
+								int dist1 = (trianglePts[1].x - c_) * (trianglePts[1].x - c_) + (trianglePts[1].y - r_) * (trianglePts[1].y - r_);
+								int dist2 = (trianglePts[2].x - c_) * (trianglePts[2].x - c_) + (trianglePts[2].y - r_) * (trianglePts[2].y - r_);
+								if (dist0==0)
+								{
+									w0 =1;
+									w1 =0;
+									w2 =0;
+								}
+								else if (dist1 == 0)
+								{
+									w0 = 0;
+									w1 = 1;
+									w2 = 0;
+								}
+								else if (dist2 == 0)
+								{
+									w0 = 0;
+									w1 = 0;
+									w2 = 1;
+								}
+								else
+								{
+									cv::Point3_<dType> weightP(1. / dist0, 1. / dist1, 1. / dist2);
+									weightP /= cv::norm(weightP);
+									w0 = weightP.x;
+									w1 = weightP.y;
+									w2 = weightP.z;
+								}
 							}
 							else
 							{
@@ -617,21 +678,31 @@ int main(int argc, char** argv)
 								w2 = 1 - w0 - w1;
 							}
 							localDepth.ptr<dType>(r_)[c_] = w0 * cameraPtA.z + w1 * cameraPtB.z + w2 * cameraPtC.z;
-							dType theSigma = w0 * sigmaA + w1 * sigmaB + w2 * sigmaC;
+
 							bool a1 = pixelMesh.ptr<int>(trueR)[trueC] >= 0;
-							bool a2 = pixelDist.ptr<dType>(trueR)[trueC] < localDepth.ptr<dType>(r_)[c_];
+							bool a2 = pixelDepth.ptr<dType>(trueR)[trueC] < localDepth.ptr<dType>(r_)[c_];
 							if (!(a1 && a2))
 							{
-								pixelDist.ptr<dType>(trueR)[trueC] = localDepth.ptr<dType>(r_)[c_];
+								dType theSigma = w0 * sigmaA + w1 * sigmaB + w2 * sigmaC;
+								dType x = w0 * meshPts[pa].x + w1 * meshPts[pb].x + w2 * meshPts[pc].x;
+								dType y = w0 * meshPts[pa].y + w1 * meshPts[pb].y + w2 * meshPts[pc].y;
+								dType z = w0 * meshPts[pa].z + w1 * meshPts[pb].z + w2 * meshPts[pc].z;
+								dType distanceA = cv::norm(cameraPtA);
+								dType distanceB = cv::norm(cameraPtB);
+								dType distanceC = cv::norm(cameraPtC);
+								pixelDepth.ptr<dType>(trueR)[trueC] = localDepth.ptr<dType>(r_)[c_];
 								pixelSigma.ptr<dType>(trueR)[trueC] = theSigma;
-								pixelMesh.ptr<int>(trueR)[trueC] = f;
+								pixelMesh.ptr<int>(trueR)[trueC] = f; 
+								pixelXYZ.at<cv::Vec<dType, 3>>(trueR, trueC)[0] = x;
+								pixelXYZ.at<cv::Vec<dType, 3>>(trueR, trueC)[1] = y;
+								pixelXYZ.at<cv::Vec<dType, 3>>(trueR, trueC)[2] = z;
+								pixelDist.ptr<dType>(trueR)[trueC] = w0 * distanceA + w1 * distanceB + w2 * distanceC;
 							} 
 						}
 					}
 				}
 			}
-		}
-
+		} 
 		View thisViewData;
 		thisViewData.fx = cameras.at(imgs.at(img.second.imageId).cameraId).focalLength;
 		thisViewData.fy = cameras.at(imgs.at(img.second.imageId).cameraId).focalLength;
@@ -650,7 +721,7 @@ int main(int argc, char** argv)
 		cv::Mat cameraToWorld = cv::Mat::eye(3,3,cv::DataType<dType>::type);
 		worldToCamera(cv::Rect(0, 0, 3, 3)).copyTo(cameraToWorld(cv::Rect(0,0,3,3)));
 		cameraToWorld = cameraToWorld.t();
-		thisViewData.rays.reserve(20480);
+		thisViewData.rays.reserve(cv::countNonZero(pixelMesh));
 		for (int r_ = 0; r_ < pixelMesh.rows; r_++)
 		{
 			for (int c_ = 0; c_ < pixelMesh.cols; c_++)
@@ -664,31 +735,40 @@ int main(int argc, char** argv)
 					dirMat /= cv::norm(dirMat);
 					cv::Mat worldDir = cameraToWorld * dirMat;
 					const auto& thisSigma = pixelSigma.ptr<dType>(r_)[c_];
+					auto thisXYZ = pixelXYZ.at<cv::Vec<dType, 3>>(r_,c_);
 					dType R = rgb.at<cv::Vec3b>(r_, c_)[2] * 0.00390625;
 					dType G = rgb.at<cv::Vec3b>(r_, c_)[1] * 0.00390625;
 					dType B = rgb.at<cv::Vec3b>(r_, c_)[0] * 0.00390625;
-					thisViewData.rays.emplace_back(dirMat.ptr<dType>(0)[0], dirMat.ptr<dType>(1)[0], dirMat.ptr<dType>(2)[0], R, G, B, thisSigma);
+					dType distance = pixelDist.ptr<dType>(r_)[c_]; 
+					thisViewData.rays.emplace_back(thisXYZ[0], thisXYZ[1], thisXYZ[2],
+						dirMat.ptr<dType>(0)[0], dirMat.ptr<dType>(1)[0], dirMat.ptr<dType>(2)[0], 
+						R, G, B, 
+						distance,thisSigma);
 				}
 			}
 		}
 		
-		std::stringstream ss;
-		{
-			cereal::JSONOutputArchive archive(ss);
-			archive(cereal::make_nvp("fx", thisViewData.fx));
-			archive(cereal::make_nvp("fy", thisViewData.fy));
-			archive(cereal::make_nvp("cx", thisViewData.cx));
-			archive(cereal::make_nvp("cy", thisViewData.cy));
-			archive(cereal::make_nvp("height", thisViewData.height));
-			archive(cereal::make_nvp("width", thisViewData.width));
-			archive(cereal::make_nvp("worldToCamera", thisViewData.worldToCamera));
-			archive(cereal::make_nvp("cameraT", thisViewData.cameraT));
-			archive(cereal::make_nvp("rays", thisViewData.rays));
-		} 
-		std::fstream fout(imgPath+".rays.json", std::ios::out);
-		fout << ss.str() << std::endl;
-		fout.close();
+		 
+		save_bin_structure(thisViewData, imgPath + ".rays.bin");
+
+		//std::stringstream ss;
+		//{
+		//	cereal::JSONOutputArchive archive(ss);
+		//	archive(cereal::make_nvp("fx", thisViewData.fx));
+		//	archive(cereal::make_nvp("fy", thisViewData.fy));
+		//	archive(cereal::make_nvp("cx", thisViewData.cx));
+		//	archive(cereal::make_nvp("cy", thisViewData.cy));
+		//	archive(cereal::make_nvp("height", thisViewData.height));
+		//	archive(cereal::make_nvp("width", thisViewData.width));
+		//	archive(cereal::make_nvp("worldToCamera", thisViewData.worldToCamera));
+		//	archive(cereal::make_nvp("cameraT", thisViewData.cameraT));
+		//	archive(cereal::make_nvp("rays", thisViewData.rays));
+		//} 
+		//std::fstream fout(imgPath+".rays.json", std::ios::out);
+		//fout << ss.str() << std::endl;
+		//fout.close();
 	}
+	return 0;
 	SelectNeighborViews(cameras, imgs, objPts);
 
 
