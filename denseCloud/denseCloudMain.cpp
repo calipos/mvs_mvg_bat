@@ -26,7 +26,7 @@
 #include "cereal/types/map.hpp"
 #include "cereal/types/tuple.hpp"
 #include "serialization.h"
-#include "view.pb.h" 
+//#include "view.pb.h" 
 #define IGL_RAY_TRI_EPSILON 0.000000001
 #define IGL_RAY_TRI_CROSS(dest,v1,v2) \
           dest[0]=v1[1]*v2[2]-v1[2]*v2[1]; \
@@ -389,6 +389,29 @@ struct View
 		ar& cameraT;
 		ar& rays; 
 	};
+	void saveToBin(const std::string&path)
+	{
+		std::fstream fout(path,std::ios::out|std::ios::binary);
+		fout.write((const char*)&fx, sizeof(dType));
+		fout.write((const char*)&fy, sizeof(dType));
+		fout.write((const char*)&cx, sizeof(dType));
+		fout.write((const char*)&cy, sizeof(dType));
+		fout.write((const char*)&height, sizeof(int));
+		fout.write((const char*)&width, sizeof(int)); 
+		fout.write((const char*)&worldToCamera[0], sizeof(dType) * worldToCamera.size());
+		fout.write((const char*)&cameraT[0], sizeof(dType) * cameraT.size());
+		int cnt = rays.size();
+		fout.write((const char*)&cnt, sizeof(int));
+		for (int i = 0; i < cnt; i++)
+		{  
+			fout.write((const char*)&rays[i].xyz[0], sizeof(dType) * 3);
+			fout.write((const char*)&rays[i].dir[0], sizeof(dType) * 3);
+			fout.write((const char*)&rays[i].RGB[0], sizeof(dType) * 3);
+			fout.write((const char*)&rays[i].dist, sizeof(dType));
+			fout.write((const char*)&rays[i].sigma, sizeof(dType));
+		}
+		return;
+	}
 };
 int main(int argc, char** argv)
 { 
@@ -747,9 +770,8 @@ int main(int argc, char** argv)
 				}
 			}
 		}
-		
-		 
-		save_bin_structure(thisViewData, imgPath + ".rays.bin");
+		thisViewData.saveToBin(imgPath + ".rays.bin");
+		  
 
 		//std::stringstream ss;
 		//{

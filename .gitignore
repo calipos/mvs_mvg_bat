@@ -32,9 +32,11 @@ replaceOpenMvgFeature/build-vs2019/*
 *.pyc
 PersistentIndependentParticles/reference_model/*
 PersistentIndependentParticles/*.gif
+DenseDepthPriorsforNeRFfromSparseInputViews/__pycache__*
 denseCloud/*.pb.cc
 denseCloud/*.pb.h
 build-2019-shared/*
+*.jpg.bin
 *.exe
 *.task
 *.dat

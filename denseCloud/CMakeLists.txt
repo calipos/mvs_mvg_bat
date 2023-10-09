@@ -1,36 +1,31 @@
 cmake_minimum_required (VERSION 2.8)
 
 # 项目信息
-project (DenseCloud) 
-#file(REMOVE  ${PROJECT_SOURCE_DIR}view.pb.cc) 
-#file(REMOVE  ${PROJECT_SOURCE_DIR}view.pb.h)
-set(Protobuf_RootDIR protobuf-3.20.0-rc3-shared)
-set(Protobuf_INCLUDE_DIR  ${thirdPart}/${Protobuf_RootDIR}/include)
-set(Protobuf_LIBRARIES  ${thirdPart}/${Protobuf_RootDIR}/lib)
-set(Protobuf_PROTOC_EXECUTABLE  ${thirdPart}/${Protobuf_RootDIR}/bin/protoc.exe)
-find_package(Protobuf REQUIRED) 
-IF (${Protobuf_FOUND})
-    message (STATUS "protobuf found: ${Protobuf_VERSION} ")  
-    message (STATUS "protobuf includeDir: ${Protobuf_INCLUDE_DIR}")
-    message (STATUS "protobuf libDir: ${Protobuf_LIBRARIES}")
-    message (STATUS "Protobuf_PROTOC_EXECUTABLE: ${Protobuf_PROTOC_EXECUTABLE}")
-ELSE (${Protobuf_FOUND})
-    MESSAGE(FATAL_ERROR "Could not locate GTK.")
-ENDIF (${Protobuf_FOUND})
-
-
-
-execute_process(
-            COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} -I=${PROJECT_SOURCE_DIR} --cpp_out=${PROJECT_SOURCE_DIR}  ${PROJECT_SOURCE_DIR}/view.proto
-            )
+project (DenseCloud)  
+#set(Protobuf_RootDIR protobuf-3.20.0-rc3-shared)
+#set(Protobuf_INCLUDE_DIR  ${thirdPart}/${Protobuf_RootDIR}/include)
+#set(Protobuf_LIBRARIES  ${thirdPart}/${Protobuf_RootDIR}/lib)
+#set(Protobuf_PROTOC_EXECUTABLE  ${thirdPart}/${Protobuf_RootDIR}/bin/protoc.exe)
+#find_package(Protobuf REQUIRED) 
+#IF (${Protobuf_FOUND})
+#    message (STATUS "protobuf found: ${Protobuf_VERSION} ")  
+#    message (STATUS "protobuf includeDir: ${Protobuf_INCLUDE_DIR}")
+#    message (STATUS "protobuf libDir: ${Protobuf_LIBRARIES}")
+#    message (STATUS "Protobuf_PROTOC_EXECUTABLE: ${Protobuf_PROTOC_EXECUTABLE}")
+#ELSE (${Protobuf_FOUND})
+#    MESSAGE(FATAL_ERROR "Could not locate GTK.")
+#ENDIF (${Protobuf_FOUND}) 
+#execute_process(
+#            COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} -I=${PROJECT_SOURCE_DIR} --cpp_out=${PROJECT_SOURCE_DIR}  ${PROJECT_SOURCE_DIR}/view.proto
+#            )
             
 include_directories (${thirdPart}/glog_release/include)
 include_directories (${thirdPart}/Eigen/eigen3)
 include_directories (${thirdPart}/opencv-static/include)
 include_directories (${thirdPart}/boost164)
-include_directories (${Protobuf_INCLUDE_DIR})
+#include_directories (${Protobuf_INCLUDE_DIR})
 include_directories (${openMvgInstall}Release/include/openMVG_dependencies/cereal/include)
-add_executable(DenseCloud denseCloudMain.cpp types.cpp SelectViews.cpp view.pb.cc common.h SelectViews.h types.h utils.h timer.h serialization.h view.pb.h) 
+add_executable(DenseCloud denseCloudMain.cpp types.cpp SelectViews.cpp   common.h SelectViews.h types.h utils.h timer.h serialization.h  ) 
 add_definitions(-DNOMINMAX  -D_USE_MATH_DEFINES  -DOPENMVG_USE_AVX2 -DOPENMVG_USE_AVX -DOPENMVG_USE_OPENMP -DEIGEN_MPL2_ONLY -DUSE_PATENTED_LIGT -DLEMON_ONLY_TEMPLATES)
 add_definitions(-DGLOG_NO_ABBREVIATED_SEVERITIES  -DGOOGLE_GLOG_DLL_DECL=)
 #D_SCL_SECURE_NO_WARNINGS
@@ -107,9 +102,8 @@ target_link_libraries ( ${PROJECT_NAME} PRIVATE
                         debug ${thirdPart}/opencv-static/lib/libwebpd.lib
                         debug ${thirdPart}/glog_debug/lib/glog.lib
                         debug ${thirdPart}/boost164/lib/libboost_serialization-vc141-mt-sgd-1_64.lib
-                        debug ${Protobuf_LIBRARIES}/libprotobufd.lib
-                        #debug ${Protobuf_LIBRARIES}/libprotobuf-lited.lib
-                        debug ${Protobuf_LIBRARIES}/libprotocd.lib
+                        #debug ${Protobuf_LIBRARIES}/libprotobufd.lib
+                        #debug ${Protobuf_LIBRARIES}/libprotocd.lib
                         optimized ${thirdPart}/opencv-static/lib/opencv_core452.lib
                         optimized ${thirdPart}/opencv-static/lib/opencv_highgui452.lib
                         optimized ${thirdPart}/opencv-static/lib/opencv_imgcodecs452.lib
@@ -130,9 +124,8 @@ target_link_libraries ( ${PROJECT_NAME} PRIVATE
                         optimized ${thirdPart}/opencv-static/lib/libwebp.lib
                         optimized ${thirdPart}/glog_release/lib/glog.lib
                         optimized ${thirdPart}/boost164/lib/libboost_serialization-vc141-mt-s-1_64.lib
-                        optimized ${Protobuf_LIBRARIES}/libprotobuf.lib
-                        #optimized ${Protobuf_LIBRARIES}/libprotobuf-lite.lib
-                        optimized ${Protobuf_LIBRARIES}/libprotoc.lib
+                        #optimized ${Protobuf_LIBRARIES}/libprotobuf.lib
+                        #optimized ${Protobuf_LIBRARIES}/libprotoc.lib
                         )
  
 #include_directories (${openMvgInstall}${CMAKE_BUILD_TYPE}/include/openMVG_dependencies)
