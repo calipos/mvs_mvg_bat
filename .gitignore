@@ -22,6 +22,7 @@
 */*/*.cmake
 .ninja_deps
 build
+__pycache__/
 WorldBuild/x64/*
 WorldBuild/.vs/*
 WorldBuild/*jpgx64/*
