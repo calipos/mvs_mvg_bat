@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import numpy as np
+import torch
 from typing import Any, Dict, List
 
 def write_masks_to_folder(masks: List[Dict[str, Any]], path: str) -> None:
@@ -30,28 +31,35 @@ def write_masks_to_folder(masks: List[Dict[str, Any]], path: str) -> None:
 
     return
 
-sam = sam_model_registry["vit_h"](checkpoint="sam_vit_h_4b8939.pth")
-image = cv2.imread('1.jpg')
+
+image = cv2.imread('img_00024.jpg')
 image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+# with open('../viewerout/landmarks/img_00024.json') as f:
+#   data = json.load(f) 
+# lanndmarks3D =np.array(data['frontLandmarks3d'])
+# lanndmarks2D = lanndmarks3D[:,0:2].astype(int)
+# promptPts0=lanndmarks2D
+# promptLabels0=np.ones(promptPts0.shape[0],dtype=int) 
+ 
 
 
-# predictor = SamPredictor(sam)
-# predictor.set_image(image)
-# promptPts0=np.array([[50,240],[170,416]])
-# promptLabels0=np.array([1,1])
-# promptPts1=np.array([[273,50],[217,633]])
-# promptLabels1=np.array([2,2])
-# masks0, _, _ = predictor.predict(promptPts0,promptLabels0)
-# masks1, _, _ = predictor.predict(promptPts1,promptLabels1)
-# filename = "0.png"
-# print(len(masks0))
-# cv2.imwrite("00.png", masks0[0] * 255)
-# cv2.imwrite("01.png", masks0[1] * 255)
-# cv2.imwrite("02.png", masks0[2] * 255)
-# cv2.imwrite("10.png", masks1[0] * 255)
-# cv2.imwrite("11.png", masks1[1] * 255)
-# cv2.imwrite("12.png", masks1[2] * 255)
+sam = sam_model_registry["vit_h"](checkpoint="sam_vit_h_4b8939.pth")
+predictor = SamPredictor(sam)
+predictor.set_image(image)
 
-mask_generator = SamAutomaticMaskGenerator(sam)
-masks = mask_generator.generate(image)
-write_masks_to_folder(masks,'./1')
+promptPts0=np.array([[364,254],[456,289]])
+promptLabels0=np.array([1,1])
+input_box = np.array([278,192, 472,459])
+
+masks, scores, logits = predictor.predict(promptPts0,promptLabels0,box=input_box[None, :]) 
+print('scores=',scores) 
+cv2.imwrite("00.png", masks[0] * 255)
+cv2.imwrite("01.png", masks[1] * 255) 
+cv2.imwrite("02.png", masks[2] * 255) 
+
+#mask_generator = SamAutomaticMaskGenerator(sam)
+#masks = mask_generator.generate(image)
+#write_masks_to_folder(masks,'./1')
+
+
+ 
