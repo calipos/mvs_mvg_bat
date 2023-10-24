@@ -22,8 +22,8 @@ mkdir %workColmapSpace%
 mkdir %workNerfSpace% 
 
 echo "-1. prepare images"
-::python.exe .\mp42jpg.py  %piciturePath%\8.mp4  2
-python.exe .\mp42jpgAndFigureLandmarks.py  %piciturePath%\11.mp4  2  %workLmsSpace%
+::python.exe .\mp42jpg.py  %piciturePath%\9.mp4  5
+python.exe .\mp42jpgAndFigureLandmarks.py  %piciturePath%\9.mp4  2  %workLmsSpace%
 
 :: parameter support: ALL FACEOUTLINE LEFTEYEBROW RIGHTEYEBROW NOSEBRIDGE NOSTRIL LEFTEYE RIGHTEYE MOUTH
 ::bin\DlibLandmark.exe  %piciturePath% %workLmsSpace% FACEOUTLINE LEFTEYEBROW RIGHTEYEBROW NOSEBRIDGE LEFTEYE RIGHTEYE MOUTH 
@@ -74,6 +74,8 @@ echo %openMvgPath%\openMVG_main_openMVG2Colmap -i %workSfmSpace%\sfm_data.bin -o
 
 bin\ParseMVG.exe   %workSfmSpace%\sfm_data.bin
 copy %piciturePath%\*.jpg %workColmapSpace%
+
+bin\DenseCloud.exe   %workColmapSpace%
 
 exit
  

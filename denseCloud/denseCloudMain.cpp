@@ -550,12 +550,21 @@ int main(int argc, char** argv)
 				meshFace.emplace_back(objIdMapToMeshPts[objPaId], objIdMapToMeshPts[objPbId], objIdMapToMeshPts[objPcId]);
 			}
 		}
-		writeObj("mvg.obj", meshPts, meshFace);
+		writeObj(colmapDir+"../mvg.obj", meshPts, meshFace);
 		for (auto&d: objIdMapToMeshPts)
 		{
 			meshPtsMapToObjId[d.second] = d.first;
 		}
 	}
+	{
+		std::fstream fptsout(colmapDir + "../facePts.txt",std::ios::out);
+		for (auto&d: objPts)
+		{
+			fptsout << d.second.objPt.x << " " << d.second.objPt.y << " " << d.second.objPt.z << std::endl;
+		}
+		fptsout.close();
+	}
+	return 0;
 	std::vector<std::vector<dType>>sigmas(meshPts.size());
 	for (const auto&img: imgs)
 	{
